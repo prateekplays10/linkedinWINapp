@@ -1,0 +1,19 @@
+{
+  "name": "link-lead-desktop",
+  "version": "1.0.0",
+  "description": "Local campaign orchestrator and CRM database dashboard for Link Lead.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.9"
+  },
+  "author": "Link Lead Team",
+  "license": "ISC"
+}

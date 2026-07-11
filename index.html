@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Lead Desktop Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-area">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+        <h2>Link Lead</h2>
+      </div>
+      
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="dashboard-tab">
+          <span class="icon">📊</span> Dashboard
+        </button>
+        <button class="nav-item" data-tab="leads-tab">
+          <span class="icon">👥</span> Leads Board
+        </button>
+        <button class="nav-item" data-tab="campaigns-tab">
+          <span class="icon">⚡</span> Campaigns
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="btn-clear-db" class="btn btn-danger-text">Clear CRM Data</button>
+      </div>
+    </aside>
+
+    <!-- Main View Panel -->
+    <main class="main-content">
+      <!-- DASHBOARD TAB -->
+      <section id="dashboard-tab" class="tab-panel active">
+        <header class="tab-header">
+          <h1>Control Center</h1>
+          <p>Real-time campaign dispatcher status and execution telemetry logs.</p>
+        </header>
+
+        <div class="metrics-grid">
+          <div class="metric-card glass-card">
+            <span class="label">Connected Clients</span>
+            <strong id="metric-client-status" class="disconnected">Offline</strong>
+          </div>
+          <div class="metric-card glass-card">
+            <span class="label">Total Leads</span>
+            <strong id="metric-total-leads">0</strong>
+          </div>
+          <div class="metric-card glass-card">
+            <span class="label">Active Campaigns</span>
+            <strong id="metric-active-campaigns">0</strong>
+          </div>
+        </div>
+
+        <div class="console-box glass-card">
+          <div class="console-header">
+            <h3>Live Telemetry logs</h3>
+            <span class="badge">WebSocket Live Connection</span>
+          </div>
+          <div id="logs-container" class="logs-feed">
+            <div class="log-item info">Welcome to Link Lead Desktop. Awaiting local extensions link...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEADS TAB -->
+      <section id="leads-tab" class="tab-panel">
+        <header class="tab-header">
+          <h1>Leads Directory</h1>
+          <p>Lists and status metrics of contacts synced from your extension scraper.</p>
+        </header>
+
+        <div class="leads-controls">
+          <div class="search-wrap">
+            <input type="text" id="leads-search" placeholder="Search contacts...">
+          </div>
+        </div>
+
+        <div class="table-container glass-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>List</th>
+                <th>Location / Company</th>
+                <th>Email / Phone</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body">
+              <tr>
+                <td colspan="5" class="empty-state">No contacts synced yet. Open your Chrome Extension to start scraping.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CAMPAIGNS TAB -->
+      <section id="campaigns-tab" class="tab-panel">
+        <header class="tab-header">
+          <h1>Prospecting Campaigns</h1>
+          <p>Create sequences and schedule messages for target segments.</p>
+        </header>
+
+        <div class="campaign-builder-grid">
+          <!-- Create Campaign Form -->
+          <div class="builder-card glass-card">
+            <h3>Create Campaign</h3>
+            <div class="form-group">
+              <label for="campaign-name">Campaign Name</label>
+              <input type="text" id="campaign-name" placeholder="e.g. Sales Manager Outreach India">
+            </div>
+
+            <div class="form-group">
+              <label for="campaign-sequence">Select Sequence Template</label>
+              <select id="campaign-sequence">
+                <option value="visit_invite_message">(Recommended) Profile Visit + Connection Invite + Message</option>
+                <option value="invite_only">Connection Invite (Only)</option>
+                <option value="message_only">Message Direct Contacts (Only)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="campaign-note">Invite Note (Optional)</label>
+              <textarea id="campaign-note" placeholder="Hi {{name}}, I would love to connect..." rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="campaign-message">Follow-up Message Body</label>
+              <textarea id="campaign-message" placeholder="Hi {{name}}, thanks for connecting! I wanted to reach out..." rows="4"></textarea>
+            </div>
+
+            <button id="btn-create-campaign" class="btn btn-primary">Create Campaign</button>
+          </div>
+
+          <!-- Existing Campaigns List -->
+          <div class="campaigns-list-card glass-card">
+            <h3>Active Campaigns</h3>
+            <div id="campaigns-feed" class="campaigns-feed-list">
+              <div class="empty-state">No campaigns created yet. Create one on the left.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
