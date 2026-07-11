@@ -13,6 +13,11 @@ const logsContainer = document.getElementById('logs-container');
 const leadsTableBody = document.getElementById('leads-table-body');
 const leadsSearch = document.getElementById('leads-search');
 
+// Pagination Elements
+const btnPrevPage = document.getElementById('btn-prev-page');
+const btnNextPage = document.getElementById('btn-next-page');
+const paginationInfo = document.getElementById('pagination-info');
+
 const campaignNameInput = document.getElementById('campaign-name');
 const campaignSequenceSelect = document.getElementById('campaign-sequence');
 const campaignNoteInput = document.getElementById('campaign-note');
@@ -24,6 +29,11 @@ const btnClearDb = document.getElementById('btn-clear-db');
 let activeTabId = 'dashboard-tab';
 let socket = null;
 
+// Pagination and Search State
+let currentPage = 1;
+const leadsPerPage = 50;
+let totalLeadsCount = 0;
+
 // 1. Sidebar Tab Switching
 tabItems.forEach(item => {
   item.addEventListener('click', () => {
@@ -34,47 +44,52 @@ tabItems.forEach(item => {
     activeTabId = item.getAttribute('data-tab');
     document.getElementById(activeTabId).classList.add('active');
 
-    if (activeTabId === 'leads-tab') loadLeads();
+    if (activeTabId === 'leads-tab') {
+      currentPage = 1;
+      loadLeads();
+    }
     if (activeTabId === 'campaigns-tab') loadCampaigns();
   });
 });
 
-// 2. Fetch and Load Leads Table
+// 2. Fetch and Load Leads Table (Paginated & Server-filtered)
 async function loadLeads() {
   try {
-    const res = await fetch(`${API_BASE}/leads`);
-    const leads = await res.json();
-    metricTotalLeads.textContent = leads.length;
+    const searchVal = leadsSearch.value.trim();
+    const offset = (currentPage - 1) * leadsPerPage;
+    
+    const res = await fetch(`${API_BASE}/leads?limit=${leadsPerPage}&offset=${offset}&search=${encodeURIComponent(searchVal)}`);
+    const data = await res.json();
+    
+    const leads = data.leads || [];
+    totalLeadsCount = data.totalCount || 0;
+    
+    metricTotalLeads.textContent = totalLeadsCount;
 
     if (leads.length === 0) {
-      leadsTableBody.innerHTML = `<tr><td colspan="5" class="empty-state">No contacts synced yet. Open your Chrome Extension to start scraping.</td></tr>`;
+      leadsTableBody.innerHTML = `<tr><td colspan="5" class="empty-state">${searchVal ? 'No matching contacts found.' : 'No contacts synced yet. Open your Chrome Extension to start scraping.'}</td></tr>`;
+      btnPrevPage.disabled = true;
+      btnNextPage.disabled = true;
+      paginationInfo.textContent = `Showing 0-0 of ${totalLeadsCount} leads`;
       return;
     }
 
     renderLeadsTable(leads);
+    
+    // Update pagination controls
+    btnPrevPage.disabled = currentPage === 1;
+    btnNextPage.disabled = currentPage * leadsPerPage >= totalLeadsCount;
+    
+    const startRange = offset + 1;
+    const endRange = Math.min(currentPage * leadsPerPage, totalLeadsCount);
+    paginationInfo.textContent = `Showing ${startRange}-${endRange} of ${totalLeadsCount} leads`;
   } catch (err) {
     console.error('Failed to load leads:', err);
   }
 }
 
 function renderLeadsTable(leads) {
-  const searchTerm = leadsSearch.value.trim().toLowerCase();
-  
-  const filteredLeads = leads.filter(lead => {
-    return (
-      lead.name.toLowerCase().includes(searchTerm) ||
-      (lead.headline && lead.headline.toLowerCase().includes(searchTerm)) ||
-      (lead.company && lead.company.toLowerCase().includes(searchTerm)) ||
-      (lead.list_name && lead.list_name.toLowerCase().includes(searchTerm))
-    );
-  });
-
-  if (filteredLeads.length === 0) {
-    leadsTableBody.innerHTML = `<tr><td colspan="5" class="empty-state">No matching contacts found.</td></tr>`;
-    return;
-  }
-
-  leadsTableBody.innerHTML = filteredLeads.map(lead => {
+  leadsTableBody.innerHTML = leads.map(lead => {
     const statusClass = lead.status.toLowerCase();
     const locationCompanyText = `${lead.location || 'N/A'} <br> <span style="font-size: 10px; color: #94a3b8;">${lead.company || 'Unknown Company'}</span>`;
     const contactInfoText = `${lead.email || 'No Email'} <br> <span style="font-size: 10px; color: #94a3b8;">${lead.phone || 'No Phone'}</span>`;
@@ -95,10 +110,29 @@ function renderLeadsTable(leads) {
   }).join('');
 }
 
-leadsSearch.addEventListener('keyup', () => {
-  fetch(`${API_BASE}/leads`)
-    .then(res => res.json())
-    .then(leads => renderLeadsTable(leads));
+// Debounced search keyup
+let searchTimeout = null;
+leadsSearch.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    currentPage = 1;
+    loadLeads();
+  }, 350);
+});
+
+// Pagination button listeners
+btnPrevPage.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--;
+    loadLeads();
+  }
+});
+
+btnNextPage.addEventListener('click', () => {
+  if (currentPage * leadsPerPage < totalLeadsCount) {
+    currentPage++;
+    loadLeads();
+  }
 });
 
 // 3. Campaigns Builder & Feed Manager
