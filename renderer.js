@@ -93,8 +93,10 @@ function connectWS() {
 
   socket.onclose = () => {
     socket = null;
-    setSyncUI('offline');
-    setTimeout(connectWS, 5000);
+    setSyncUI('awaiting');
+    // Reconnect with exponential backoff (5s, 10s, 20s, max 30s)
+    const delay = Math.min(30000, 5000 * (1 + Math.random()));
+    setTimeout(connectWS, delay);
   };
 
   socket.onerror = () => { if (socket) socket.close(); };
@@ -133,6 +135,10 @@ function onDatabaseEvent(evt) {
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 function renderProfile(p) {
   if (!p || !p.name) return;
+
+  // Cache to localStorage so Win App never reverts to Guest Profile on WS disconnect
+  try { localStorage.setItem('ll_cached_profile', JSON.stringify(p)); } catch (_) {}
+
   document.getElementById('user-name').textContent          = p.name;
   document.getElementById('user-headline').textContent      = p.headline || '';
   document.getElementById('user-connections-count').textContent = p.connections || '–';
@@ -149,6 +155,19 @@ function renderProfile(p) {
       img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=0a66c2&color=fff&size=120`;
     };
   }
+
+  // Show the sync check icon if profile is real
+  if (p.name !== 'Prospector' && p.name !== 'Guest Profile') {
+    document.getElementById('sync-check').style.display = 'inline-flex';
+  }
+}
+
+// Load cached profile immediately on boot (before any WS data arrives)
+function loadCachedProfile() {
+  try {
+    const cached = localStorage.getItem('ll_cached_profile');
+    if (cached) renderProfile(JSON.parse(cached));
+  } catch (_) {}
 }
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
@@ -501,7 +520,8 @@ async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
   loadStats();
 }
 
-// ─── BOOT ─────────────────────────────────────────────────────────────────────
+// ─── BOOT ─────────────────────────────────────────────────────────────────────────
+loadCachedProfile();  // Show last known profile IMMEDIATELY (before any WS data)
 connectWS();
 loadStats();
 loadRemoteLogs();
