@@ -300,12 +300,17 @@
       </div>
 
       <!-- Active scrape progress bar -->
-      <div id="scrape-progress-bar" class="progress-banner hidden">
-        <div class="progress-info">
-          <span class="pulse-dot"></span>
-          <span id="scrape-progress-text">Scraping…</span>
+      <div id="scrape-progress-bar" class="progress-banner hidden" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div class="progress-info">
+            <span class="pulse-dot"></span>
+            <span id="scrape-progress-text">Scraping…</span>
+          </div>
+          <button id="btn-stop-scrape-bar" class="btn btn-ghost-sm">Stop</button>
         </div>
-        <button id="btn-stop-scrape-bar" class="btn btn-ghost-sm">Stop</button>
+        <div class="scrape-progress-track" style="width: 100%; height: 6px; background: #dbeafe; border-radius: 3px; overflow: hidden; margin-top: 4px;">
+          <div id="scrape-fill-bar" style="width: 0%; height: 100%; background: #2563eb; transition: width 0.4s ease; border-radius: 3px;"></div>
+        </div>
       </div>
     </section>
 

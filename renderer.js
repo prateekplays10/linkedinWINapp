@@ -1,4 +1,4 @@
-// renderer.js — Link Lead Desktop v2.0.0
+﻿// renderer.js â€” Link Lead Desktop v2.0.0
 'use strict';
 
 const API_BASE = 'https://mbtg3x8u.function2.insforge.app/api';
@@ -6,7 +6,7 @@ let socket = null;
 let currentPage = 0;
 const PAGE_SIZE = 50;
 
-// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.querySelectorAll('.menu-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
@@ -21,7 +21,7 @@ document.querySelectorAll('.menu-item').forEach(btn => {
   });
 });
 
-// ─── WEBSOCKET ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ WEBSOCKET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const badge    = document.getElementById('console-connection-badge');
 const syncText = document.getElementById('profile-sync-text');
 const logsBox  = document.getElementById('logs-container');
@@ -54,38 +54,38 @@ function connectWS() {
           onDatabaseEvent(d.event);
           break;
 
-        // ── Real-time scraping progress from Extension ─────────────────────
+        // â”€â”€ Real-time scraping progress from Extension â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'SCRAPE_PROGRESS': {
           const { count, limit, type, latest } = d;
           const pct = limit > 0 ? Math.round((count / limit) * 100) : 0;
-          showProgress(`Scraping ${type}… (${count}/${limit}) — Last: ${latest || ''}`);
+          showProgress(`Scraping ${type}â€¦ (${count}/${limit}) â€” Last: ${latest || ''}`);
           // Update the progress fill bar
           const bar = document.getElementById('scrape-fill-bar');
           if (bar) bar.style.width = `${pct}%`;
           break;
         }
 
-        // ── A lead was captured — refresh the prospects table ──────────────
+        // â”€â”€ A lead was captured â€” refresh the prospects table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'LEAD_SCRAPED':
           loadLeads();
           loadStats();
           break;
 
-        // ── Scraping stopped (from Extension or Win App) ─────────────────
+        // â”€â”€ Scraping stopped (from Extension or Win App) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'SCRAPE_STOPPED':
           hideProgress();
           loadStats();
           break;
 
-        // ── Task completed by Extension ─────────────────────────────
+        // â”€â”€ Task completed by Extension â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'TASK_COMPLETED':
           loadStats();
           loadRemoteLogs();
           break;
 
-        // ── Safety blocked ────────────────────────────────────────
+        // â”€â”€ Safety blocked â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'TASK_BLOCKED':
-          showToast(`⚠️ Safety: ${d.reason}`);
+          showToast(`âš ï¸ Safety: ${d.reason}`);
           break;
       }
     } catch (_) {}
@@ -132,7 +132,7 @@ function onDatabaseEvent(evt) {
   if (evt.table_name === 'logs')      loadRemoteLogs();
 }
 
-// ─── PROFILE ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderProfile(p) {
   if (!p || !p.name) return;
 
@@ -141,9 +141,9 @@ function renderProfile(p) {
 
   document.getElementById('user-name').textContent          = p.name;
   document.getElementById('user-headline').textContent      = p.headline || '';
-  document.getElementById('user-connections-count').textContent = p.connections || '–';
-  document.getElementById('user-pending-count').textContent     = p.pending    || '–';
-  document.getElementById('user-views-count').textContent       = p.views      || '–';
+  document.getElementById('user-connections-count').textContent = p.connections || 'â€“';
+  document.getElementById('user-pending-count').textContent     = p.pending    || 'â€“';
+  document.getElementById('user-views-count').textContent       = p.views      || 'â€“';
 
   const firstName = p.name.split(' ')[0];
   document.getElementById('home-greeting').textContent = `Hello ${firstName},`;
@@ -170,7 +170,7 @@ function loadCachedProfile() {
   } catch (_) {}
 }
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadStats() {
   try {
     const res = await fetch(`${API_BASE}/stats`);
@@ -202,7 +202,7 @@ async function loadStats() {
   } catch (_) {}
 }
 
-// ─── LEADS TABLE ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ LEADS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const leadsBody    = document.getElementById('leads-table-body');
 const searchInput  = document.getElementById('prospect-search');
 const filterSource = document.getElementById('filter-source');
@@ -220,7 +220,7 @@ async function loadLeads() {
     const leads = data.leads || [];
     const total = data.total || 0;
 
-    document.getElementById('pagination-info').textContent = `Page ${currentPage + 1} • ${total} total`;
+    document.getElementById('pagination-info').textContent = `Page ${currentPage + 1} â€¢ ${total} total`;
     document.getElementById('btn-prev-page').disabled = currentPage === 0;
     document.getElementById('btn-next-page').disabled = (offset + PAGE_SIZE) >= total;
 
@@ -255,18 +255,18 @@ async function loadLeads() {
               </div>
               <div>
                 <div class="lead-name">${safe(l.name)}</div>
-                <a href="${safe(l.profile_url)}" target="_blank" class="lead-url">View Profile ↗</a>
+                <a href="${safe(l.profile_url)}" target="_blank" class="lead-url">View Profile â†—</a>
               </div>
             </div>
           </td>
-          <td class="lead-headline">${safe(l.headline || '—')}</td>
-          <td><span class="source-badge ${l.source || 'search'}">${l.source === 'group' ? '👥 Group' : '🔍 Search'}</span></td>
+          <td class="lead-headline">${safe(l.headline || 'â€”')}</td>
+          <td><span class="source-badge ${l.source || 'search'}">${l.source === 'group' ? 'ðŸ‘¥ Group' : 'ðŸ” Search'}</span></td>
           <td><span class="status-pill" style="color:${sc.color};border-color:${sc.color}">${sc.label}</span></td>
           <td>
             <div class="lead-actions">
-              <button class="btn-action" onclick="visitLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Visit Profile">👁</button>
-              <button class="btn-action" onclick="inviteLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send Invite">🤝</button>
-              <button class="btn-action" onclick="messageLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send DM">💬</button>
+              <button class="btn-action" onclick="visitLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Visit Profile">ðŸ‘</button>
+              <button class="btn-action" onclick="inviteLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send Invite">ðŸ¤</button>
+              <button class="btn-action" onclick="messageLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send DM">ðŸ’¬</button>
             </div>
           </td>
         </tr>`;
@@ -308,7 +308,7 @@ searchInput.addEventListener('input', () => { currentPage = 0; loadLeads(); });
 filterSource.addEventListener('change', () => { currentPage = 0; loadLeads(); });
 filterStatus.addEventListener('change', () => { currentPage = 0; loadLeads(); });
 
-// ─── SCRAPER CONTROLS ─────────────────────────────────────────────────────────
+// â”€â”€â”€ SCRAPER CONTROLS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getScraperConfig() {
   return {
     minDelay:    parseInt(document.getElementById('inp-min-delay').value) || 12,
@@ -336,7 +336,7 @@ document.getElementById('btn-start-group').addEventListener('click', async () =>
   if (socket && socket.readyState === 1) {
     socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'group', targetUrl: url, limit, config: getScraperConfig() }));
   }
-  showProgress(`Scraping group members… (0/${limit})`);
+  showProgress(`Scraping group membersâ€¦ (0/${limit})`);
 });
 
 document.getElementById('btn-start-search').addEventListener('click', async () => {
@@ -348,7 +348,7 @@ document.getElementById('btn-start-search').addEventListener('click', async () =
   if (socket && socket.readyState === 1) {
     socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'search', targetUrl, limit, config: getScraperConfig() }));
   }
-  showProgress(`Scraping search results… (0/${limit})`);
+  showProgress(`Scraping search resultsâ€¦ (0/${limit})`);
 });
 
 document.getElementById('btn-start-post').addEventListener('click', async () => {
@@ -359,7 +359,7 @@ document.getElementById('btn-start-post').addEventListener('click', async () => 
   if (socket && socket.readyState === 1) {
     socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'search', targetUrl, limit, config: getScraperConfig() }));
   }
-  showProgress(`Scraping post engagers for "${keyword}"… (0/${limit})`);
+  showProgress(`Scraping post engagers for "${keyword}"â€¦ (0/${limit})`);
 });
 
 document.getElementById('btn-stop-all').addEventListener('click', async () => {
@@ -372,7 +372,7 @@ document.getElementById('btn-stop-scrape-bar').addEventListener('click', () => {
   hideProgress();
 });
 
-// ─── CAMPAIGNS ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ CAMPAIGNS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadCampaigns() {
   try {
     const res = await fetch(`${API_BASE}/campaigns`);
@@ -407,20 +407,20 @@ document.getElementById('btn-submit-campaign').addEventListener('click', async (
     });
     const j = await res.json();
     if (j.queued !== undefined) {
-      showFeedback(fb, `✓ Launched! ${j.queued} leads × ${j.tasks / j.queued | 0} steps = ${j.tasks} tasks queued.`, 'success');
+      showFeedback(fb, `âœ“ Launched! ${j.queued} leads Ã— ${j.tasks / j.queued | 0} steps = ${j.tasks} tasks queued.`, 'success');
       loadCampaigns(); loadStats();
     } else showFeedback(fb, j.error || 'Failed.', 'error');
   } catch (e) { showFeedback(fb, e.message, 'error'); }
 });
 
-// ─── OUTREACH ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ OUTREACH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadOutreachStats() {
   try {
     const res = await fetch(`${API_BASE}/stats`);
     const s = await res.json();
-    document.getElementById('qm-pending').textContent  = s.pending  ?? '–';
-    document.getElementById('qm-executed').textContent = s.executed ?? '–';
-    document.getElementById('qm-failed').textContent   = '–';
+    document.getElementById('qm-pending').textContent  = s.pending  ?? 'â€“';
+    document.getElementById('qm-executed').textContent = s.executed ?? 'â€“';
+    document.getElementById('qm-failed').textContent   = 'â€“';
   } catch (_) {}
   loadRemoteLogs();
 }
@@ -469,25 +469,25 @@ document.getElementById('btn-launch-outreach').addEventListener('click', async (
     });
     const j = await res.json();
     if (j.queued !== undefined) {
-      showFeedback(fb, `✓ Outreach launched! ${j.tasks} tasks queued across ${j.queued} leads.`, 'success');
+      showFeedback(fb, `âœ“ Outreach launched! ${j.tasks} tasks queued across ${j.queued} leads.`, 'success');
       loadOutreachStats();
     } else showFeedback(fb, j.error || 'Failed.', 'error');
   } catch (e) { showFeedback(fb, e.message, 'error'); }
 });
 
-// ─── CLEAR CRM ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ CLEAR CRM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.getElementById('btn-clear-crm').addEventListener('click', async () => {
   if (!confirm('Permanently clear all CRM data from the cloud database?')) return;
   await fetch(`${API_BASE}/clear-data`, { method: 'POST' });
   location.reload();
 });
 
-// ─── SHORTCUT ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ SHORTCUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.getElementById('btn-create-campaign-shortcut').addEventListener('click', () => {
   document.querySelector('[data-tab="campaigns-tab"]').click();
 });
 
-// ─── UTILS ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ UTILS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function safe(str) {
   return (str || '').replace(/[&<>"']/g, t => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[t]));
 }
@@ -506,7 +506,7 @@ function showToast(msg) {
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
 }
 
-// ─── API: direct queue POST for per-lead buttons ──────────────────────────────
+// â”€â”€â”€ API: direct queue POST for per-lead buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Add the missing /queue REST endpoint support via backend by sending via WS
 async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
   // Use a direct POST if the backend supports it, else log it
@@ -520,10 +520,13 @@ async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
   loadStats();
 }
 
-// ─── BOOT ─────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ BOOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 loadCachedProfile();  // Show last known profile IMMEDIATELY (before any WS data)
 connectWS();
 loadStats();
 loadRemoteLogs();
 setInterval(loadStats, 15000);
 setInterval(loadRemoteLogs, 20000);
+
+
+
