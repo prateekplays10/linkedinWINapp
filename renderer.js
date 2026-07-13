@@ -53,6 +53,40 @@ function connectWS() {
         case 'DATABASE_EVENT':
           onDatabaseEvent(d.event);
           break;
+
+        // ── Real-time scraping progress from Extension ─────────────────────
+        case 'SCRAPE_PROGRESS': {
+          const { count, limit, type, latest } = d;
+          const pct = limit > 0 ? Math.round((count / limit) * 100) : 0;
+          showProgress(`Scraping ${type}… (${count}/${limit}) — Last: ${latest || ''}`);
+          // Update the progress fill bar
+          const bar = document.getElementById('scrape-fill-bar');
+          if (bar) bar.style.width = `${pct}%`;
+          break;
+        }
+
+        // ── A lead was captured — refresh the prospects table ──────────────
+        case 'LEAD_SCRAPED':
+          loadLeads();
+          loadStats();
+          break;
+
+        // ── Scraping stopped (from Extension or Win App) ─────────────────
+        case 'SCRAPE_STOPPED':
+          hideProgress();
+          loadStats();
+          break;
+
+        // ── Task completed by Extension ─────────────────────────────
+        case 'TASK_COMPLETED':
+          loadStats();
+          loadRemoteLogs();
+          break;
+
+        // ── Safety blocked ────────────────────────────────────────
+        case 'TASK_BLOCKED':
+          showToast(`⚠️ Safety: ${d.reason}`);
+          break;
       }
     } catch (_) {}
   };
