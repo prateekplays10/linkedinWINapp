@@ -8,240 +8,416 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-layout">
-    
-    <!-- Sidebar Navigation -->
-    <aside class="app-sidebar">
-      <div class="sidebar-header">
-        <svg class="header-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-        <h2>Link Lead</h2>
+<div class="app-layout">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <h2>Link Lead</h2>
+    </div>
+
+    <nav class="sidebar-menu">
+      <button class="menu-item active" data-tab="home-tab">
+        <span class="menu-icon">🏠</span> Home
+      </button>
+      <button class="menu-item" data-tab="prospects-tab">
+        <span class="menu-icon">👥</span> Prospects
+      </button>
+      <button class="menu-item" data-tab="scraper-tab">
+        <span class="menu-icon">🔍</span> Scraper
+      </button>
+      <button class="menu-item" data-tab="campaigns-tab">
+        <span class="menu-icon">⚡</span> Campaigns
+      </button>
+      <button class="menu-item" data-tab="outreach-tab">
+        <span class="menu-icon">💬</span> Outreach
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="upgrade-card">
+        <h4>🗃️ UPGRADE</h4>
+        <p>Unlock unlimited actions &amp; templates</p>
+      </div>
+      <button id="btn-clear-crm" class="clear-data-link">Clear CRM Data</button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN WORKSPACE ──────────────────────────────────── -->
+  <main class="app-workspace">
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- HOME TAB                                          -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <section id="home-tab" class="tab-panel active">
+      <div class="home-grid">
+
+        <!-- Left column -->
+        <div class="home-main-col">
+          <header class="home-header">
+            <div class="greeting-block">
+              <h1 id="home-greeting">Hello Prospector,</h1>
+              <p>Here is your LinkedIn prospecting overview.</p>
+            </div>
+            <div class="dropdown-filter">
+              <select><option>Last 30 days</option><option>Last 7 days</option><option>All time</option></select>
+            </div>
+          </header>
+
+          <!-- Stat cards -->
+          <div class="overview-cards">
+            <div class="overview-card card-linkedin">
+              <div class="card-title">
+                <span class="icon-ln">in</span>
+                <h4>LinkedIn</h4>
+              </div>
+              <div class="card-radial-progress">
+                <div class="radial-ring">
+                  <svg viewBox="0 0 36 36" class="radial-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path id="invite-percent-ring" class="circle" stroke-dasharray="0,100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <div class="radial-label" id="invite-pct-label">0%</div>
+                </div>
+                <div class="radial-details">
+                  <strong id="stat-accepted-invites">0</strong>
+                  <span>Accepted invitations</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="overview-card card-stats">
+              <div class="card-title"><span class="icon-email">📊</span><h4>Overall Stats</h4></div>
+              <div class="stats-mini-grid">
+                <div class="mini-stat"><strong id="stat-total-leads">0</strong><span>Total Leads</span></div>
+                <div class="mini-stat"><strong id="stat-invites-sent">0</strong><span>Invites Sent</span></div>
+                <div class="mini-stat"><strong id="stat-messages-sent">0</strong><span>Messages</span></div>
+                <div class="mini-stat"><strong id="stat-campaigns">0</strong><span>Campaigns</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance row -->
+          <div class="perf-row">
+            <div class="perf-card">
+              <div class="perf-header">
+                <span class="icon-ln">in</span>
+                <h4>LinkedIn Performance</h4>
+              </div>
+              <div class="perf-stats">
+                <div class="p-metric"><strong id="stat-answered-msgs">0</strong><span>Answered messages</span></div>
+                <div class="p-metric"><strong id="stat-response-rate">0%</strong><span>Response rate</span></div>
+                <div class="p-metric"><strong id="stat-queued">0</strong><span>Queued actions</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Console -->
+          <div class="console-card">
+            <div class="console-header">
+              <h4>Live Telemetry</h4>
+              <span id="console-connection-badge" class="badge-status awaiting">AWAITING CONNECTION</span>
+            </div>
+            <div id="logs-container" class="console-box">Initialising Link Lead Desktop…</div>
+          </div>
+        </div>
+
+        <!-- Right profile column -->
+        <div class="home-profile-col">
+          <div class="profile-card">
+            <div class="profile-sync-indicator">
+              <span class="pulse-dot"></span>
+              <span id="profile-sync-text">LinkedIn Profile</span>
+            </div>
+            <div class="avatar-container">
+              <img id="user-avatar" class="profile-avatar" src="https://ui-avatars.com/api/?name=LL&background=0a66c2&color=fff&size=120" alt="Avatar">
+              <span class="sync-check-badge" id="sync-check" style="display:none">✔</span>
+            </div>
+            <h3 id="user-name">Guest Profile</h3>
+            <span class="headline-text" id="user-headline">Open LinkedIn in Chrome</span>
+            <span class="plan-badge">FREEMIUM PLAN</span>
+            <div class="profile-stats">
+              <div class="p-stat"><strong id="user-connections-count">–</strong><span>Connections</span></div>
+              <div class="p-stat"><strong id="user-pending-count">–</strong><span>Pending</span></div>
+              <div class="p-stat"><strong id="user-views-count">–</strong><span>Views</span></div>
+            </div>
+          </div>
+
+          <div class="prospecting-card">
+            <div class="prospecting-header">
+              <h4>Prospecting status</h4>
+              <span id="prospecting-status-badge" class="badge-status inactive">INACTIVE</span>
+            </div>
+            <div class="prospecting-stats">
+              <div class="pr-stat"><strong id="active-campaigns-count">0</strong><span>Active campaigns</span></div>
+              <div class="pr-stat"><strong id="queued-actions-count">0</strong><span>Queued actions</span></div>
+            </div>
+            <button id="btn-create-campaign-shortcut" class="btn btn-primary btn-block">🚀 Create a campaign</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- PROSPECTS TAB                                     -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <section id="prospects-tab" class="tab-panel">
+      <header class="tab-header">
+        <h2>Prospects Database</h2>
+        <div class="tab-header-controls">
+          <select id="filter-source" class="tab-select">
+            <option value="">All Sources</option>
+            <option value="group">Group Members</option>
+            <option value="search">Search Results</option>
+          </select>
+          <select id="filter-status" class="tab-select">
+            <option value="">All Statuses</option>
+            <option value="captured">Captured</option>
+            <option value="visited">Visited</option>
+            <option value="invite_sent">Invite Sent</option>
+            <option value="messaged">Messaged</option>
+          </select>
+          <input type="text" id="prospect-search" placeholder="Search name, company, headline…">
+        </div>
+      </header>
+      <div class="table-container">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Prospect</th>
+              <th>Headline</th>
+              <th>Source</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leads-table-body">
+            <tr><td colspan="5" class="empty-cell">No prospects in DB yet. Use the Scraper tab or Chrome Extension.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <button id="btn-prev-page" class="btn btn-ghost-sm" disabled>← Prev</button>
+        <span id="pagination-info">Page 1</span>
+        <button id="btn-next-page" class="btn btn-ghost-sm">Next →</button>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- SCRAPER TAB                                       -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <section id="scraper-tab" class="tab-panel">
+      <header class="tab-header">
+        <h2>Scraper Control</h2>
+        <span id="scraper-status-badge" class="badge-status inactive">IDLE</span>
+      </header>
+
+      <div class="scraper-grid">
+        <!-- Group scraper -->
+        <div class="scraper-card">
+          <div class="scraper-card-head">
+            <span class="scraper-icon">👥</span>
+            <h3>Group Member Scraper</h3>
+          </div>
+          <div class="form-group">
+            <label>LinkedIn Group URL</label>
+            <input type="url" id="inp-group-url" placeholder="https://www.linkedin.com/groups/12345/">
+          </div>
+          <div class="form-group">
+            <label>Max leads to capture</label>
+            <input type="number" id="inp-group-limit" value="50" min="5" max="500">
+          </div>
+          <button id="btn-start-group" class="btn btn-primary btn-block">▶ Launch Group Scraper</button>
+        </div>
+
+        <!-- Keyword / search scraper -->
+        <div class="scraper-card">
+          <div class="scraper-card-head">
+            <span class="scraper-icon">🔍</span>
+            <h3>Search / Keyword Scraper</h3>
+          </div>
+          <div class="form-group">
+            <label>Keyword (auto-builds LinkedIn search URL)</label>
+            <input type="text" id="inp-keyword" placeholder='e.g. "CTO" Bangalore SaaS'>
+          </div>
+          <div class="form-group">
+            <label>OR paste a LinkedIn People Search URL</label>
+            <input type="url" id="inp-search-url" placeholder="https://www.linkedin.com/search/results/people/…">
+          </div>
+          <div class="form-group">
+            <label>Max leads to capture</label>
+            <input type="number" id="inp-search-limit" value="50" min="5" max="500">
+          </div>
+          <button id="btn-start-search" class="btn btn-primary btn-block">▶ Launch Search Scraper</button>
+        </div>
+
+        <!-- Post / content scraper -->
+        <div class="scraper-card">
+          <div class="scraper-card-head">
+            <span class="scraper-icon">📝</span>
+            <h3>Post Engagement Scraper</h3>
+          </div>
+          <div class="form-group">
+            <label>Post keyword (finds people who engaged)</label>
+            <input type="text" id="inp-post-keyword" placeholder='e.g. "growth hacking"'>
+          </div>
+          <div class="form-group">
+            <label>Max leads to capture</label>
+            <input type="number" id="inp-post-limit" value="30" min="5" max="200">
+          </div>
+          <button id="btn-start-post" class="btn btn-primary btn-block">▶ Launch Post Scraper</button>
+        </div>
+
+        <!-- Safety settings -->
+        <div class="scraper-card">
+          <div class="scraper-card-head">
+            <span class="scraper-icon">🛡️</span>
+            <h3>Safety Settings</h3>
+          </div>
+          <div class="form-group">
+            <label>Delay between scrapes (seconds)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="inp-min-delay" value="12" min="5" style="flex:1">
+              <span style="color:var(--text-muted)">to</span>
+              <input type="number" id="inp-max-delay" value="35" max="120" style="flex:1">
+            </div>
+          </div>
+          <div class="toggle-form-row">
+            <label>Simulate human scrolling</label>
+            <input type="checkbox" id="tog-scroll" checked class="toggle-check">
+          </div>
+          <div class="safety-limits-mini">
+            <div class="slm-row"><span>Daily invites sent</span><strong id="sl-invites">0 / 40</strong></div>
+            <div class="slm-row"><span>Daily messages sent</span><strong id="sl-messages">0 / 80</strong></div>
+            <div class="slm-row"><span>Total actions today</span><strong id="sl-total">0 / 120</strong></div>
+          </div>
+          <button id="btn-stop-all" class="btn btn-danger btn-block">■ Stop All Automation</button>
+        </div>
       </div>
 
-      <nav class="sidebar-menu">
-        <button class="menu-item active" data-tab="home-tab">
-          <span>🏠</span> Home
-        </button>
-        <button class="menu-item" data-tab="prospects-tab">
-          <span>👥</span> Prospects
-        </button>
-        <button class="menu-item" data-tab="campaigns-tab">
-          <span>⚡</span> Campaigns
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="upgrade-card">
-          <h4>🗃️ UPGRADE</h4>
-          <p>Unlock unlimited actions & templates</p>
+      <!-- Active scrape progress bar -->
+      <div id="scrape-progress-bar" class="progress-banner hidden">
+        <div class="progress-info">
+          <span class="pulse-dot"></span>
+          <span id="scrape-progress-text">Scraping…</span>
         </div>
-        <button id="btn-clear-crm" class="clear-data-link">Clear CRM Data</button>
+        <button id="btn-stop-scrape-bar" class="btn btn-ghost-sm">Stop</button>
       </div>
-    </aside>
+    </section>
 
-    <!-- Main Workspace Area -->
-    <main class="app-workspace">
-      
-      <!-- HOME PANEL -->
-      <section id="home-tab" class="tab-panel active">
-        <div class="home-grid">
-          
-          <!-- Left Main Column -->
-          <div class="home-main-col">
-            <header class="home-header">
-              <div class="greeting-block">
-                <h1 id="home-greeting">Hello Prospector,</h1>
-                <p>Here is your LinkedIn prospecting overview.</p>
-              </div>
-              <div class="dropdown-filter">
-                <select>
-                  <option>Last 30 days</option>
-                  <option>Last 7 days</option>
-                  <option>All time</option>
-                </select>
-              </div>
-            </header>
-
-            <!-- Overview Stats Grid -->
-            <div class="overview-cards">
-              <div class="overview-card card-linkedin">
-                <div class="card-title">
-                  <span class="icon-ln">in</span>
-                  <h4>LinkedIn</h4>
-                </div>
-                <div class="card-radial-progress">
-                  <div class="radial-ring">
-                    <svg viewBox="0 0 36 36" class="radial-chart">
-                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                      <path id="invite-percent-ring" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <div class="radial-label">0%</div>
-                  </div>
-                  <div class="radial-details">
-                    <strong id="stat-accepted-invites">0</strong>
-                    <span>Accepted invitations</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="overview-card card-emails">
-                <div class="card-title">
-                  <span class="icon-email">✉</span>
-                  <h4>Emails</h4>
-                </div>
-                <p class="email-subtext">Users get as much as 50% more answers when they also send emails in their campaigns.</p>
-                <button class="btn btn-primary btn-unlock">Unlock Emails</button>
-              </div>
-            </div>
-
-            <!-- Performance Grid -->
-            <div class="perf-row">
-              <div class="perf-card">
-                <div class="perf-header">
-                  <span class="icon-ln">in</span>
-                  <h4>LinkedIn Performance</h4>
-                </div>
-                <div class="perf-stats">
-                  <div class="p-metric">
-                    <strong id="stat-answered-msgs">0</strong>
-                    <span>Answered messages</span>
-                  </div>
-                  <div class="p-metric">
-                    <strong id="stat-response-rate">0%</strong>
-                    <span>Response rate</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Console Log Feed -->
-            <div class="console-card">
-              <div class="console-header">
-                <h4>Live Telemetry logs</h4>
-                <span id="console-connection-badge" class="badge-status awaiting">AWAITING CONNECTION</span>
-              </div>
-              <div id="logs-container" class="console-box">
-                Welcome to Link Lead Desktop. Awaiting cloud synchronization...
-              </div>
-            </div>
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- CAMPAIGNS TAB                                     -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <section id="campaigns-tab" class="tab-panel">
+      <header class="tab-header"><h2>Campaign Center</h2></header>
+      <div class="campaign-creator-grid">
+        <div class="creator-card">
+          <h3>Create Campaign</h3>
+          <div class="form-group">
+            <label>Campaign Name</label>
+            <input type="text" id="campaign-name-input" placeholder="e.g. Q3 LinkedIn Outreach">
           </div>
-
-          <!-- Right Profile Column -->
-          <div class="home-profile-col">
-            <div class="profile-card">
-              <!-- Sync Pulser Confirmation -->
-              <div class="profile-sync-indicator">
-                <span class="pulse-dot"></span>
-                <span id="profile-sync-text">LinkedIn Profile</span>
-              </div>
-
-              <div class="avatar-container">
-                <img id="user-avatar" class="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar">
-                <span class="sync-check-badge" id="sync-check">✔</span>
-              </div>
-              
-              <h3 id="user-name">Guest Profile</h3>
-              <span class="plan-badge">FREEMIUM PLAN</span>
-
-              <div class="profile-stats">
-                <div class="p-stat">
-                  <strong id="user-connections-count">0</strong>
-                  <span>Connections</span>
-                </div>
-                <div class="p-stat">
-                  <strong id="user-pending-count">0</strong>
-                  <span>Pending</span>
-                </div>
-                <div class="p-stat">
-                  <strong id="user-views-count">0</strong>
-                  <span>Profile views</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="prospecting-card">
-              <div class="prospecting-header">
-                <h4>Prospecting status</h4>
-                <span id="prospecting-status-badge" class="badge-status inactive">INACTIVE</span>
-              </div>
-              <div class="prospecting-stats">
-                <div class="pr-stat">
-                  <strong id="active-campaigns-count">0</strong>
-                  <span>Active campaigns</span>
-                </div>
-                <div class="pr-stat">
-                  <strong id="queued-actions-count">0</strong>
-                  <span>Queued actions</span>
-                </div>
-              </div>
-              <button id="btn-create-campaign-shortcut" class="btn btn-primary btn-block">🚀 Create a campaign</button>
-            </div>
+          <div class="form-group">
+            <label>Action Sequence</label>
+            <select id="sequence-select">
+              <option value="visit-invite">Profile Visit → Connection Request</option>
+              <option value="visit-invite-message">Visit → Invite → Follow-up DM</option>
+              <option value="invite-only">Connection Request Only</option>
+              <option value="message-only">Direct Message Only (already connected)</option>
+            </select>
           </div>
-
+          <div class="form-group">
+            <label>Connection Note / DM Message</label>
+            <textarea id="campaign-message-input" rows="3" placeholder="Hi {{name}}, I came across your profile…"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Target Lead Pool</label>
+            <select id="campaign-lead-filter">
+              <option value="all">All captured leads</option>
+              <option value="captured">Status: Captured only</option>
+              <option value="group">Source: Group Members</option>
+              <option value="search">Source: Search Results</option>
+            </select>
+          </div>
+          <button id="btn-submit-campaign" class="btn btn-primary btn-block">🚀 Launch Campaign</button>
+          <div id="campaign-feedback" class="feedback-msg hidden"></div>
         </div>
-      </section>
 
-      <!-- PROSPECTS PANEL -->
-      <section id="prospects-tab" class="tab-panel">
-        <header class="tab-header">
-          <h2>Prospects Database</h2>
-          <input type="text" id="prospect-search" placeholder="Search leads by name, company, list...">
-        </header>
-        <div class="table-container">
-          <table class="leads-table">
-            <thead>
-              <tr>
-                <th>Prospect</th>
-                <th>Headline</th>
-                <th>Status</th>
-                <th>Action List</th>
-              </tr>
-            </thead>
-            <tbody id="leads-table-body">
-              <tr>
-                <td colspan="4" class="empty-cell">No prospects synced in Database yet. Launch Chrome Extension scraper.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- CAMPAIGNS PANEL -->
-      <section id="campaigns-tab" class="tab-panel">
-        <header class="tab-header">
-          <h2>Campaign Center</h2>
-        </header>
-        <div class="campaign-creator-grid">
-          <div class="creator-card">
-            <h3>Create Campaign</h3>
-            <div class="form-group">
-              <label for="campaign-name-input">Campaign Name</label>
-              <input type="text" id="campaign-name-input" placeholder="e.g. LinkedIn Invite Sequence">
-            </div>
-            <div class="form-group">
-              <label for="sequence-select">Action Sequence</label>
-              <select id="sequence-select">
-                <option value="visit-invite">Profile Visit -> Connection Request (Standard)</option>
-                <option value="visit-message">Profile Visit -> Follow-up Message</option>
-                <option value="invite-only">Connection Request Only</option>
-              </select>
-            </div>
-            <button id="btn-submit-campaign" class="btn btn-primary btn-block">Initialize Campaign</button>
-          </div>
-
-          <div class="creator-card">
-            <h3>Active Campaigns</h3>
-            <div id="campaigns-list" class="campaigns-list-feed">
-              <div class="empty-camp">No active campaigns. Configure a template.</div>
-            </div>
+        <div class="creator-card">
+          <h3>Active Campaigns</h3>
+          <div id="campaigns-list" class="campaigns-list-feed">
+            <div class="empty-camp">No campaigns yet. Configure a template.</div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-    </main>
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- OUTREACH TAB                                      -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <section id="outreach-tab" class="tab-panel">
+      <header class="tab-header"><h2>Outreach & DM Automation</h2></header>
+      <div class="outreach-grid">
 
-  </div>
-  <script src="renderer.js"></script>
+        <div class="outreach-card">
+          <h3>DM Campaign Launcher</h3>
+          <div class="info-banner">
+            💡 Variables supported in messages: <code>{{name}}</code> <code>{{company}}</code> <code>{{headline}}</code>
+          </div>
+          <div class="form-group">
+            <label>Campaign Name</label>
+            <input type="text" id="out-camp-name" placeholder="e.g. Follow-up Sequence Oct">
+          </div>
+          <div class="form-group">
+            <label>Action Type</label>
+            <select id="out-sequence">
+              <option value="message-only">Direct Message (already connected)</option>
+              <option value="visit-invite-message">Visit → Invite → DM (full sequence)</option>
+              <option value="visit-invite">Visit → Connection Request</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Message Template</label>
+            <textarea id="out-message" rows="5" placeholder="Hi {{name}}, I noticed your work at {{company}} and thought you'd be a great connection for…"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Target Leads</label>
+            <select id="out-lead-filter">
+              <option value="all">All captured leads</option>
+              <option value="captured">Captured only (never contacted)</option>
+              <option value="group">Group members</option>
+              <option value="search">Search results</option>
+            </select>
+          </div>
+          <button id="btn-launch-outreach" class="btn btn-primary btn-block">🚀 Launch Outreach</button>
+          <div id="outreach-feedback" class="feedback-msg hidden"></div>
+        </div>
+
+        <div class="outreach-card">
+          <h3>Outreach Queue Monitor</h3>
+          <div class="queue-monitor">
+            <div class="qm-stat"><strong id="qm-pending">–</strong><span>Pending tasks</span></div>
+            <div class="qm-stat"><strong id="qm-executed">–</strong><span>Executed</span></div>
+            <div class="qm-stat"><strong id="qm-failed">–</strong><span>Failed</span></div>
+          </div>
+          <div class="info-banner" style="margin-top:12px">
+            🛡️ <strong>Anti-ban protection active.</strong> Actions run Mon–Fri 9AM–6PM with randomized 12–35 second delays. Max 40 invites and 80 messages per day.
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Activity Log</label>
+            <div id="outreach-log" class="mini-log-box">Waiting for activity…</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+<script src="renderer.js"></script>
 </body>
 </html>

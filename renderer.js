@@ -1,328 +1,475 @@
-// Windows Companion App Renderer Controller
-const API_BASE = "https://mbtg3x8u.function2.insforge.app/api";
+// renderer.js — Link Lead Desktop v2.0.0
+'use strict';
+
+const API_BASE = 'https://mbtg3x8u.function2.insforge.app/api';
 let socket = null;
+let currentPage = 0;
+const PAGE_SIZE = 50;
 
-// Page Navigation Bindings
-const menuItems = document.querySelectorAll('.menu-item');
-const tabPanels = document.querySelectorAll('.tab-panel');
-
-menuItems.forEach(item => {
-  item.addEventListener('click', () => {
-    const target = item.getAttribute('data-tab');
-    
-    menuItems.forEach(i => i.classList.remove('active'));
-    tabPanels.forEach(p => p.classList.remove('active'));
-
-    item.classList.add('active');
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.menu-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.tab;
     document.getElementById(target).classList.add('active');
-    
-    // Lazy load panels
-    if (target === 'prospects-tab') loadLeads();
-    if (target === 'campaigns-tab') loadCampaigns();
+    if (target === 'prospects-tab')   { currentPage = 0; loadLeads(); }
+    if (target === 'campaigns-tab')   loadCampaigns();
+    if (target === 'scraper-tab')     loadStats();
+    if (target === 'outreach-tab')    loadOutreachStats();
   });
 });
 
-// ==========================================
-// WebSocket Synchronization (Automatic Pulse)
-// ==========================================
-const consoleBadge = document.getElementById('console-connection-badge');
-const syncCheck = document.getElementById('sync-check');
-const profileSyncText = document.getElementById('profile-sync-text');
-const logsContainer = document.getElementById('logs-container');
-const userAvatar = document.getElementById('user-avatar');
-const userName = document.getElementById('user-name');
-const userConnections = document.getElementById('user-connections-count');
-const userPending = document.getElementById('user-pending-count');
-const userViews = document.getElementById('user-views-count');
+// ─── WEBSOCKET ────────────────────────────────────────────────────────────────
+const badge    = document.getElementById('console-connection-badge');
+const syncText = document.getElementById('profile-sync-text');
+const logsBox  = document.getElementById('logs-container');
 
 function connectWS() {
   if (socket) return;
-  
   socket = new WebSocket('wss://mbtg3x8u.function2.insforge.app/api');
 
   socket.onopen = () => {
-    console.log('Linked to Deno WS host.');
-    updateSyncUI('connected');
-    
-    // Register desktop client
-    socket.send(JSON.stringify({
-      action: 'REGISTER_DESKTOP'
-    }));
+    socket.send(JSON.stringify({ action: 'REGISTER_DESKTOP' }));
   };
 
-  socket.onmessage = (event) => {
+  socket.onmessage = (ev) => {
     try {
-      const data = JSON.parse(event.data);
-      console.log('Desktop received action:', data.action);
-
-      switch (data.action) {
+      const d = JSON.parse(ev.data);
+      switch (d.action) {
         case 'REGISTERED':
-          updateSyncUI(data.clientStatus);
+          setSyncUI(d.clientStatus === 'connected' ? 'connected' : 'awaiting');
           break;
-
         case 'CLIENT_CONNECTED':
-          updateSyncUI('connected');
+          setSyncUI('connected');
           break;
-
         case 'CLIENT_DISCONNECTED':
-          updateSyncUI('disconnected');
+          setSyncUI('awaiting');
           break;
-
-        case 'NEW_LOG':
-          renderLog(data);
-          break;
-
         case 'SYNC_PROFILE_DATA':
-          renderSyncedProfile(data.profile);
+          renderProfile(d.profile);
           break;
-
         case 'DATABASE_EVENT':
-          console.log("Database update captured:", data.event);
-          if (data.event.table_name === 'leads') {
-            loadLeads();
-          }
-          if (data.event.table_name === 'queue') {
-            loadQueueStats();
-          }
-          if (data.event.table_name === 'campaigns') {
-            loadCampaigns();
-          }
-          if (data.event.table_name === 'logs') {
-            fetch(`${API_BASE}/logs`)
-              .then(res => res.json())
-              .then(logs => {
-                logsContainer.innerHTML = '';
-                logs.reverse().forEach(log => {
-                  const div = document.createElement('div');
-                  div.className = `log-item ${log.level || 'info'}`;
-                  const time = new Date(log.timestamp).toLocaleTimeString();
-                  div.innerHTML = `<span style="color: #64748b;">[${time}]</span> ${escapeHTML(log.message)}`;
-                  logsContainer.appendChild(div);
-                });
-                logsContainer.scrollTop = logsContainer.scrollHeight;
-              });
-          }
+          onDatabaseEvent(d.event);
           break;
       }
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (_) {}
   };
 
   socket.onclose = () => {
     socket = null;
-    updateSyncUI('offline');
-    setTimeout(connectWS, 5000); // Auto reconnect
+    setSyncUI('offline');
+    setTimeout(connectWS, 5000);
   };
 
-  socket.onerror = () => {
-    if (socket) socket.close();
-  };
+  socket.onerror = () => { if (socket) socket.close(); };
 }
 
-function updateSyncUI(status) {
+function setSyncUI(status) {
   if (status === 'connected') {
-    consoleBadge.className = 'badge-status connected';
-    consoleBadge.textContent = 'CONNECTED & SYNCED';
-    syncCheck.style.display = 'inline-flex';
-    profileSyncText.textContent = 'Active Sync';
-    profileSyncText.style.color = '#10b981';
-  } else if (status === 'disconnected') {
-    consoleBadge.className = 'badge-status awaiting';
-    consoleBadge.textContent = 'AWAITING EXTENSION';
-    syncCheck.style.display = 'none';
-    profileSyncText.textContent = 'Out of Sync';
-    profileSyncText.style.color = '#64748b';
+    badge.className = 'badge-status connected';
+    badge.textContent = 'CONNECTED & SYNCED';
+    syncText.textContent = '● Active Sync';
+    syncText.style.color = '#22c55e';
+    document.getElementById('sync-check').style.display = 'inline-flex';
+  } else if (status === 'awaiting') {
+    badge.className = 'badge-status awaiting';
+    badge.textContent = 'AWAITING EXTENSION';
+    syncText.textContent = '● Extension Offline';
+    syncText.style.color = '#f59e0b';
+    document.getElementById('sync-check').style.display = 'none';
   } else {
-    consoleBadge.className = 'badge-status inactive';
-    consoleBadge.textContent = 'OFFLINE';
-    syncCheck.style.display = 'none';
-    profileSyncText.textContent = 'Offline';
-    profileSyncText.style.color = '#ef4444';
+    badge.className = 'badge-status inactive';
+    badge.textContent = 'DISCONNECTED';
+    syncText.textContent = '● Offline';
+    syncText.style.color = '#ef4444';
+    document.getElementById('sync-check').style.display = 'none';
   }
 }
 
-function renderSyncedProfile(profile) {
-  if (!profile) return;
-  
-  if (profile.name) userName.textContent = profile.name;
-  if (profile.avatar) userAvatar.src = profile.avatar;
-  if (profile.connections) userConnections.textContent = profile.connections;
-  if (profile.pending) userPending.textContent = profile.pending;
-  if (profile.views) userViews.textContent = profile.views;
-
-  // Personal greeting matching Waalaxy
-  const shortName = profile.name.split(' ')[0];
-  document.getElementById('home-greeting').textContent = `Hello ${shortName},`;
+function onDatabaseEvent(evt) {
+  if (!evt) return;
+  if (evt.table_name === 'leads')     { loadLeads(); loadStats(); }
+  if (evt.table_name === 'queue')     { loadStats(); loadOutreachStats(); }
+  if (evt.table_name === 'campaigns') loadCampaigns();
+  if (evt.table_name === 'logs')      loadRemoteLogs();
 }
 
-function renderLog(log) {
-  const div = document.createElement('div');
-  div.className = `log-item ${log.level || 'info'}`;
-  div.innerHTML = `<span style="color: #64748b;">[${log.timestamp}]</span> ${escapeHTML(log.message)}`;
-  logsContainer.appendChild(div);
-  logsContainer.scrollTop = logsContainer.scrollHeight;
+// ─── PROFILE ──────────────────────────────────────────────────────────────────
+function renderProfile(p) {
+  if (!p || !p.name) return;
+  document.getElementById('user-name').textContent          = p.name;
+  document.getElementById('user-headline').textContent      = p.headline || '';
+  document.getElementById('user-connections-count').textContent = p.connections || '–';
+  document.getElementById('user-pending-count').textContent     = p.pending    || '–';
+  document.getElementById('user-views-count').textContent       = p.views      || '–';
+
+  const firstName = p.name.split(' ')[0];
+  document.getElementById('home-greeting').textContent = `Hello ${firstName},`;
+
+  if (p.avatar) {
+    const img = document.getElementById('user-avatar');
+    img.src = p.avatar;
+    img.onerror = () => {
+      img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=0a66c2&color=fff&size=120`;
+    };
+  }
 }
 
-// ==========================================
-// REST API Integrations (CRM)
-// ==========================================
-const leadsTableBody = document.getElementById('leads-table-body');
-const prospectSearch = document.getElementById('prospect-search');
+// ─── STATS ────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats`);
+    const s = await res.json();
+    document.getElementById('stat-total-leads').textContent   = s.leads     || 0;
+    document.getElementById('stat-invites-sent').textContent  = s.invites   || 0;
+    document.getElementById('stat-messages-sent').textContent = s.messages  || 0;
+    document.getElementById('stat-campaigns').textContent     = s.campaigns || 0;
+    document.getElementById('active-campaigns-count').textContent = s.campaigns || 0;
+    document.getElementById('queued-actions-count').textContent   = s.pending   || 0;
+    document.getElementById('stat-queued').textContent            = s.pending   || 0;
+
+    const invites = s.invites || 0;
+    const total   = s.leads   || 1;
+    const pct     = Math.min(100, Math.round((invites / total) * 100));
+    document.getElementById('invite-percent-ring').setAttribute('stroke-dasharray', `${pct},100`);
+    document.getElementById('invite-pct-label').textContent    = `${pct}%`;
+    document.getElementById('stat-accepted-invites').textContent = invites;
+
+    // Prospecting badge
+    const prosBadge = document.getElementById('prospecting-status-badge');
+    if (s.pending > 0) {
+      prosBadge.textContent = 'ACTIVE';
+      prosBadge.className = 'badge-status connected';
+    } else {
+      prosBadge.textContent = 'INACTIVE';
+      prosBadge.className = 'badge-status inactive';
+    }
+  } catch (_) {}
+}
+
+// ─── LEADS TABLE ──────────────────────────────────────────────────────────────
+const leadsBody    = document.getElementById('leads-table-body');
+const searchInput  = document.getElementById('prospect-search');
+const filterSource = document.getElementById('filter-source');
+const filterStatus = document.getElementById('filter-status');
 
 async function loadLeads() {
-  const query = prospectSearch.value.trim();
-  try {
-    const res = await fetch(`${API_BASE}/leads?search=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    const leads = data.leads || data;
+  const search = searchInput.value.trim();
+  const source = filterSource.value;
+  const status = filterStatus.value;
+  const offset = currentPage * PAGE_SIZE;
 
-    if (!leads || leads.length === 0) {
-      leadsTableBody.innerHTML = `<tr><td colspan="4" class="empty-cell">No prospects found in CRM.</td></tr>`;
+  try {
+    const res = await fetch(`${API_BASE}/leads?search=${encodeURIComponent(search)}&source=${source}&status=${status}&limit=${PAGE_SIZE}&offset=${offset}`);
+    const data = await res.json();
+    const leads = data.leads || [];
+    const total = data.total || 0;
+
+    document.getElementById('pagination-info').textContent = `Page ${currentPage + 1} • ${total} total`;
+    document.getElementById('btn-prev-page').disabled = currentPage === 0;
+    document.getElementById('btn-next-page').disabled = (offset + PAGE_SIZE) >= total;
+
+    if (!leads.length) {
+      leadsBody.innerHTML = `<tr><td colspan="5" class="empty-cell">No prospects found. Use Scraper or Chrome Extension to capture leads.</td></tr>`;
       return;
     }
 
-    leadsTableBody.innerHTML = leads.map(lead => {
-      let statusColor = 'var(--text-muted)';
-      if (lead.status === 'invite_sent') statusColor = 'var(--primary-color)';
-      if (lead.status === 'connected') statusColor = 'var(--success-color)';
-      if (lead.status === 'replied') statusColor = '#f59e0b';
-      if (lead.status === 'failed') statusColor = 'var(--danger-color)';
+    const statusConfig = {
+      captured:    { color: '#64748b', label: 'Captured' },
+      visited:     { color: '#6366f1', label: 'Visited'  },
+      invite_sent: { color: '#0a66c2', label: 'Invited'  },
+      messaged:    { color: '#0891b2', label: 'Messaged' },
+      connected:   { color: '#22c55e', label: 'Connected'},
+      replied:     { color: '#f59e0b', label: 'Replied'  },
+      failed:      { color: '#ef4444', label: 'Failed'   },
+    };
 
+    leadsBody.innerHTML = leads.map(l => {
+      const sc = statusConfig[l.status] || { color: '#64748b', label: l.status };
+      const initials = (l.name || 'LL').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      const avatarHtml = l.avatar
+        ? `<img src="${safe(l.avatar)}" class="lead-avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : '';
       return `
         <tr>
           <td>
-            <div style="font-weight: 700;">${escapeHTML(lead.name)}</div>
-            <a href="${escapeHTML(lead.profile_url)}" target="_blank" style="font-size: 11px; color: var(--primary-color);">View LinkedIn</a>
+            <div class="lead-name-cell">
+              <div class="lead-avatar-wrap">
+                ${avatarHtml}
+                <div class="lead-avatar-initials" style="${l.avatar ? 'display:none' : ''}">${initials}</div>
+              </div>
+              <div>
+                <div class="lead-name">${safe(l.name)}</div>
+                <a href="${safe(l.profile_url)}" target="_blank" class="lead-url">View Profile ↗</a>
+              </div>
+            </div>
           </td>
-          <td style="color: var(--text-muted); max-width: 250px;">${escapeHTML(lead.headline)}</td>
-          <td><span style="font-weight: 800; text-transform: uppercase; font-size: 10px; color: ${statusColor};">${lead.status || 'captured'}</span></td>
-          <td><span class="plan-badge">${escapeHTML(lead.list_name)}</span></td>
-        </tr>
-      `;
+          <td class="lead-headline">${safe(l.headline || '—')}</td>
+          <td><span class="source-badge ${l.source || 'search'}">${l.source === 'group' ? '👥 Group' : '🔍 Search'}</span></td>
+          <td><span class="status-pill" style="color:${sc.color};border-color:${sc.color}">${sc.label}</span></td>
+          <td>
+            <div class="lead-actions">
+              <button class="btn-action" onclick="visitLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Visit Profile">👁</button>
+              <button class="btn-action" onclick="inviteLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send Invite">🤝</button>
+              <button class="btn-action" onclick="messageLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send DM">💬</button>
+            </div>
+          </td>
+        </tr>`;
     }).join('');
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    leadsBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Error loading leads: ${safe(e.message)}</td></tr>`;
   }
 }
 
-prospectSearch.addEventListener('input', loadLeads);
+// Per-lead action buttons
+window.visitLead = async (id, url) => {
+  await queueSingleTask(id, url, 'visit_profile');
+  showToast('Visit task queued for Extension!');
+};
+window.inviteLead = async (id, url) => {
+  await queueSingleTask(id, url, 'send_invite');
+  showToast('Invite task queued for Extension!');
+};
+window.messageLead = async (id, url) => {
+  const msg = prompt('Enter your message for this lead:');
+  if (!msg) return;
+  await queueSingleTask(id, url, 'send_message', msg);
+  showToast('Message task queued for Extension!');
+};
 
-// Campaigns Creator
-const btnSubmitCampaign = document.getElementById('btn-submit-campaign');
-const campaignNameInput = document.getElementById('campaign-name-input');
-const sequenceSelect = document.getElementById('sequence-select');
-const campaignsList = document.getElementById('campaigns-list');
+async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
+  await fetch(`${API_BASE}/queue`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lead_id: leadId, profile_url: profileUrl, action_type: actionType, message_body: message })
+  }).catch(() => {});
+  loadStats();
+}
 
+// Pagination
+document.getElementById('btn-prev-page').addEventListener('click', () => { currentPage = Math.max(0, currentPage - 1); loadLeads(); });
+document.getElementById('btn-next-page').addEventListener('click', () => { currentPage++; loadLeads(); });
+searchInput.addEventListener('input', () => { currentPage = 0; loadLeads(); });
+filterSource.addEventListener('change', () => { currentPage = 0; loadLeads(); });
+filterStatus.addEventListener('change', () => { currentPage = 0; loadLeads(); });
+
+// ─── SCRAPER CONTROLS ─────────────────────────────────────────────────────────
+function getScraperConfig() {
+  return {
+    minDelay:    parseInt(document.getElementById('inp-min-delay').value) || 12,
+    maxDelay:    parseInt(document.getElementById('inp-max-delay').value) || 35,
+    humanScroll: document.getElementById('tog-scroll').checked
+  };
+}
+
+function showProgress(text) {
+  document.getElementById('scrape-progress-text').textContent = text;
+  document.getElementById('scrape-progress-bar').classList.remove('hidden');
+  document.getElementById('scraper-status-badge').textContent = 'RUNNING';
+  document.getElementById('scraper-status-badge').className = 'badge-status connected';
+}
+function hideProgress() {
+  document.getElementById('scrape-progress-bar').classList.add('hidden');
+  document.getElementById('scraper-status-badge').textContent = 'IDLE';
+  document.getElementById('scraper-status-badge').className = 'badge-status inactive';
+}
+
+document.getElementById('btn-start-group').addEventListener('click', async () => {
+  const url   = document.getElementById('inp-group-url').value.trim();
+  const limit = parseInt(document.getElementById('inp-group-limit').value) || 50;
+  if (!url || !url.includes('linkedin.com')) { alert('Enter a valid LinkedIn Group URL.'); return; }
+  if (socket && socket.readyState === 1) {
+    socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'group', targetUrl: url, limit, config: getScraperConfig() }));
+  }
+  showProgress(`Scraping group members… (0/${limit})`);
+});
+
+document.getElementById('btn-start-search').addEventListener('click', async () => {
+  const keyword   = document.getElementById('inp-keyword').value.trim();
+  const manualUrl = document.getElementById('inp-search-url').value.trim();
+  const limit     = parseInt(document.getElementById('inp-search-limit').value) || 50;
+  let targetUrl = manualUrl || (keyword ? `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keyword)}` : '');
+  if (!targetUrl) { alert('Enter a keyword or search URL.'); return; }
+  if (socket && socket.readyState === 1) {
+    socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'search', targetUrl, limit, config: getScraperConfig() }));
+  }
+  showProgress(`Scraping search results… (0/${limit})`);
+});
+
+document.getElementById('btn-start-post').addEventListener('click', async () => {
+  const keyword = document.getElementById('inp-post-keyword').value.trim();
+  const limit   = parseInt(document.getElementById('inp-post-limit').value) || 30;
+  if (!keyword) { alert('Enter a keyword to search posts.'); return; }
+  const targetUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keyword)}`;
+  if (socket && socket.readyState === 1) {
+    socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'search', targetUrl, limit, config: getScraperConfig() }));
+  }
+  showProgress(`Scraping post engagers for "${keyword}"… (0/${limit})`);
+});
+
+document.getElementById('btn-stop-all').addEventListener('click', async () => {
+  if (socket && socket.readyState === 1) socket.send(JSON.stringify({ action: 'STOP_SCRAPING' }));
+  hideProgress();
+});
+
+document.getElementById('btn-stop-scrape-bar').addEventListener('click', () => {
+  if (socket && socket.readyState === 1) socket.send(JSON.stringify({ action: 'STOP_SCRAPING' }));
+  hideProgress();
+});
+
+// ─── CAMPAIGNS ────────────────────────────────────────────────────────────────
 async function loadCampaigns() {
   try {
     const res = await fetch(`${API_BASE}/campaigns`);
-    const campaigns = await res.json();
-
-    if (!campaigns || campaigns.length === 0) {
-      campaignsList.innerHTML = `<div class="empty-camp">No active campaigns configured.</div>`;
-      return;
-    }
-
-    campaignsList.innerHTML = campaigns.map(c => `
+    const camps = await res.json();
+    const el = document.getElementById('campaigns-list');
+    if (!camps.length) { el.innerHTML = '<div class="empty-camp">No campaigns yet.</div>'; return; }
+    el.innerHTML = camps.map(c => `
       <div class="camp-item">
         <div class="camp-info">
-          <h4>${escapeHTML(c.name)}</h4>
-          <span>Type: ${c.sequence_type}</span>
+          <h4>${safe(c.name)}</h4>
+          <span>${c.sequence_type}</span>
         </div>
-        <span class="camp-status-badge">Active</span>
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error(err);
-  }
+        <span class="camp-status-badge">${c.status}</span>
+      </div>`).join('');
+  } catch (_) {}
 }
 
-btnSubmitCampaign.addEventListener('click', async () => {
-  const name = campaignNameInput.value.trim();
-  const sequence = sequenceSelect.value;
+document.getElementById('btn-submit-campaign').addEventListener('click', async () => {
+  const name    = document.getElementById('campaign-name-input').value.trim();
+  const seq     = document.getElementById('sequence-select').value;
+  const message = document.getElementById('campaign-message-input').value.trim();
+  const filter  = document.getElementById('campaign-lead-filter').value;
+  const fb      = document.getElementById('campaign-feedback');
 
-  if (!name) {
-    alert('Please enter a campaign name!');
-    return;
-  }
-
-  const payload = {
-    id: 'camp_' + Math.random().toString(36).substr(2, 9),
-    name,
-    sequence_type: sequence
-  };
+  if (!name) { showFeedback(fb, 'Enter a campaign name.', 'error'); return; }
 
   try {
-    await fetch(`${API_BASE}/campaigns`, {
+    const res = await fetch(`${API_BASE}/launch-campaign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ name, sequence_type: seq, message_body: message, lead_filter: filter })
     });
-    
-    campaignNameInput.value = '';
-    loadCampaigns();
-    loadQueueStats();
-  } catch (err) {
-    console.error(err);
-  }
+    const j = await res.json();
+    if (j.queued !== undefined) {
+      showFeedback(fb, `✓ Launched! ${j.queued} leads × ${j.tasks / j.queued | 0} steps = ${j.tasks} tasks queued.`, 'success');
+      loadCampaigns(); loadStats();
+    } else showFeedback(fb, j.error || 'Failed.', 'error');
+  } catch (e) { showFeedback(fb, e.message, 'error'); }
 });
 
-async function loadQueueStats() {
+// ─── OUTREACH ─────────────────────────────────────────────────────────────────
+async function loadOutreachStats() {
   try {
-    const res = await fetch(`${API_BASE}/queue-count`);
-    const data = await res.json();
-    document.getElementById('queued-actions-count').textContent = data.count || 0;
-  } catch (err) {
-    console.error(err);
-  }
+    const res = await fetch(`${API_BASE}/stats`);
+    const s = await res.json();
+    document.getElementById('qm-pending').textContent  = s.pending  ?? '–';
+    document.getElementById('qm-executed').textContent = s.executed ?? '–';
+    document.getElementById('qm-failed').textContent   = '–';
+  } catch (_) {}
+  loadRemoteLogs();
 }
 
-// Clear CRM Data
-document.getElementById('btn-clear-crm').addEventListener('click', async () => {
-  if (confirm('Are you sure you want to permanently clear the CRM database?')) {
-    await fetch(`${API_BASE}/clear-data`, { method: 'POST' });
-    location.reload();
-  }
+async function loadRemoteLogs() {
+  try {
+    const res = await fetch(`${API_BASE}/logs`);
+    const logs = await res.json();
+    const box = document.getElementById('outreach-log');
+    if (!logs.length) { box.textContent = 'No activity yet.'; return; }
+    box.innerHTML = logs.slice(0, 20).map(l => {
+      const t = new Date(l.created_at).toLocaleTimeString();
+      const cls = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#94a3b8' }[l.level] || '#94a3b8';
+      return `<div style="color:${cls};font-size:11px;margin-bottom:2px">[${t}] ${safe(l.message)}</div>`;
+    }).join('');
+  } catch (_) {}
+
+  // Also update logs console on home tab
+  try {
+    const res = await fetch(`${API_BASE}/logs`);
+    const logs = await res.json();
+    logsBox.innerHTML = logs.slice(0, 30).map(l => {
+      const t = new Date(l.created_at).toLocaleTimeString();
+      const cls = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#94a3b8' }[l.level] || '#94a3b8';
+      return `<div style="color:${cls};font-size:11px;margin-bottom:2px">[${t}] ${safe(l.message)}</div>`;
+    }).join('');
+    logsBox.scrollTop = logsBox.scrollHeight;
+  } catch (_) {}
+}
+
+document.getElementById('btn-launch-outreach').addEventListener('click', async () => {
+  const name    = document.getElementById('out-camp-name').value.trim();
+  const seq     = document.getElementById('out-sequence').value;
+  const message = document.getElementById('out-message').value.trim();
+  const filter  = document.getElementById('out-lead-filter').value;
+  const fb      = document.getElementById('outreach-feedback');
+
+  if (!name)    { showFeedback(fb, 'Enter a campaign name.', 'error'); return; }
+  if (!message && seq !== 'visit-invite') { showFeedback(fb, 'Enter a message template.', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/launch-campaign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sequence_type: seq, message_body: message, lead_filter: filter })
+    });
+    const j = await res.json();
+    if (j.queued !== undefined) {
+      showFeedback(fb, `✓ Outreach launched! ${j.tasks} tasks queued across ${j.queued} leads.`, 'success');
+      loadOutreachStats();
+    } else showFeedback(fb, j.error || 'Failed.', 'error');
+  } catch (e) { showFeedback(fb, e.message, 'error'); }
 });
 
-// Load Logs
-fetch(`${API_BASE}/logs`)
-  .then(res => res.json())
-  .then(logs => {
-    logsContainer.innerHTML = '';
-    logs.reverse().forEach(log => {
-      const div = document.createElement('div');
-      div.className = `log-item ${log.level || 'info'}`;
-      const time = new Date(log.timestamp).toLocaleTimeString();
-      div.innerHTML = `<span style="color: #64748b;">[${time}]</span> ${escapeHTML(log.message)}`;
-      logsContainer.appendChild(div);
+// ─── CLEAR CRM ────────────────────────────────────────────────────────────────
+document.getElementById('btn-clear-crm').addEventListener('click', async () => {
+  if (!confirm('Permanently clear all CRM data from the cloud database?')) return;
+  await fetch(`${API_BASE}/clear-data`, { method: 'POST' });
+  location.reload();
+});
+
+// ─── SHORTCUT ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-create-campaign-shortcut').addEventListener('click', () => {
+  document.querySelector('[data-tab="campaigns-tab"]').click();
+});
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function safe(str) {
+  return (str || '').replace(/[&<>"']/g, t => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[t]));
+}
+
+function showFeedback(el, msg, type) {
+  el.textContent = msg;
+  el.className = `feedback-msg ${type}`;
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.style.opacity = '1', 10);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+}
+
+// ─── API: direct queue POST for per-lead buttons ──────────────────────────────
+// Add the missing /queue REST endpoint support via backend by sending via WS
+async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
+  // Use a direct POST if the backend supports it, else log it
+  try {
+    await fetch(`${API_BASE}/queue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_id: leadId, profile_url: profileUrl, action_type: actionType, message_body: message })
     });
-    logsContainer.scrollTop = logsContainer.scrollHeight;
-  });
-
-// Setup Shortcut redirect
-const shortcutBtn = document.getElementById('btn-create-campaign-shortcut');
-if (shortcutBtn) {
-  shortcutBtn.addEventListener('click', () => {
-    document.querySelector('[data-tab="campaigns-tab"]').click();
-  });
+  } catch (_) {}
+  loadStats();
 }
 
-// XSS Sanitizer
-function escapeHTML(str) {
-  return (str || '').replace(/[&<>'"]/g, 
-    tag => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      "'": '&#39;',
-      '"': '&quot;'
-    }[tag] || tag)
-  );
-}
-
-// Init WS
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
 connectWS();
-loadQueueStats();
-setInterval(loadQueueStats, 10000);
+loadStats();
+loadRemoteLogs();
+setInterval(loadStats, 15000);
+setInterval(loadRemoteLogs, 20000);

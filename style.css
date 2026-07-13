@@ -772,3 +772,117 @@ body {
   font-size: 12px;
   font-weight: 500;
 }
+
+/* ------------------------------------------------------- */
+/* NEW v2 STYLES — Appended by Link Lead v2.0.0 rebuild   */
+/* ------------------------------------------------------- */
+
+/* Updated primary color to LinkedIn blue */
+:root {
+  --primary-color: #0a66c2;
+  --primary-glow: rgba(10, 102, 194, 0.2);
+}
+
+/* Lead table avatars */
+.lead-name-cell { display: flex; align-items: center; gap: 10px; }
+.lead-avatar-wrap { flex-shrink: 0; }
+.lead-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; }
+.lead-avatar-initials {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #eff6ff; color: #0a66c2; font-weight: 700; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; border: 1.5px solid #bfdbfe;
+}
+.lead-name   { font-weight: 700; font-size: 13px; }
+.lead-url    { font-size: 10px; color: #0a66c2; text-decoration: none; }
+.lead-url:hover { text-decoration: underline; }
+.lead-headline { font-size: 12px; color: #64748b; max-width: 240px; }
+
+.source-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+.source-badge.group  { background: #f0fdf4; color: #166534; }
+.source-badge.search { background: #eff6ff; color: #1e40af; }
+
+.status-pill {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 20px; border: 1.5px solid;
+}
+
+.lead-actions { display: flex; gap: 4px; }
+.btn-action {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 4px 7px; cursor: pointer; font-size: 14px;
+  transition: background .15s;
+}
+.btn-action:hover { background: #eff6ff; }
+
+/* Pagination */
+.table-pagination { display: flex; align-items: center; gap: 12px; padding: 12px 20px; justify-content: flex-end; }
+.btn-ghost-sm { padding: 6px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-ghost-sm:hover:not(:disabled) { background: #f1f5f9; }
+.btn-ghost-sm:disabled { opacity: .4; cursor: not-allowed; }
+#pagination-info { font-size: 12px; color: #64748b; }
+
+/* Tab header controls */
+.tab-header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tab-select { padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 12px; outline: none; }
+.tab-select:focus { border-color: #0a66c2; }
+
+/* --- SCRAPER TAB ----- */
+.scraper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; }
+.scraper-card { background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 12px; }
+.scraper-card-head { display: flex; align-items: center; gap: 10px; }
+.scraper-card-head h3 { font-size: 15px; font-weight: 700; }
+.scraper-icon { font-size: 22px; }
+
+.safety-limits-mini { background: #f8fafc; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+.slm-row { display: flex; justify-content: space-between; font-size: 12px; }
+.slm-row span { color: #64748b; }
+.slm-row strong { color: #0a66c2; }
+
+.toggle-form-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.toggle-check { width: 16px; height: 16px; accent-color: #0a66c2; }
+
+.progress-banner {
+  margin: 0 20px 16px; background: #eff6ff; border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.progress-banner.hidden { display: none; }
+.progress-info { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #1e40af; }
+
+/* --- CAMPAIGNS TAB --- */
+.feedback-msg { font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 8px; margin-top: 6px; }
+.feedback-msg.success { background: #dcfce7; color: #166534; }
+.feedback-msg.error   { background: #fee2e2; color: #991b1b; }
+.feedback-msg.hidden  { display: none; }
+
+/* --- OUTREACH TAB --- */
+.outreach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; }
+.outreach-card { background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 12px; }
+.outreach-card h3 { font-size: 15px; font-weight: 700; }
+.info-banner { background: #eff6ff; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.5; }
+.info-banner code { background: #dbeafe; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+.queue-monitor { display: flex; gap: 12px; }
+.qm-stat { flex: 1; background: #f8fafc; border-radius: 10px; padding: 10px; text-align: center; }
+.qm-stat strong { display: block; font-size: 22px; color: #0a66c2; }
+.qm-stat span { font-size: 10px; color: #64748b; text-transform: uppercase; }
+
+.mini-log-box { background: #1e293b; color: #94a3b8; border-radius: 8px; padding: 10px; height: 160px; overflow-y: auto; font-size: 11px; font-family: monospace; }
+
+/* --- HEADLINE TEXT --- */
+.headline-text { font-size: 12px; color: #64748b; display: block; margin-bottom: 6px; text-align: center; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* --- STATS MINI GRID --- */
+.stats-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini-stat { text-align: center; }
+.mini-stat strong { display: block; font-size: 20px; color: #0a66c2; }
+.mini-stat span { font-size: 10px; color: #64748b; }
+
+/* --- TOAST --- */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #1e293b; color: #fff;
+  padding: 10px 18px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  opacity: 0; transition: opacity .3s;
+  z-index: 9999;
+}
