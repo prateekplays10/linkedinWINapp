@@ -1,5 +1,5 @@
 const API_BASE = "https://mbtg3x8u.function2.insforge.app/api";
-const WS_BASE = "wss://mbtg3x8u.function2.insforge.app";
+const WS_BASE = "wss://mbtg3x8u.function2.insforge.app/api";
 
 // UI DOM Elements
 const tabItems = document.querySelectorAll('.nav-item');
