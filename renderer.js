@@ -6,8 +6,8 @@ const tabItems = document.querySelectorAll('.nav-item');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
 const metricClientStatus = document.getElementById('metric-client-status');
-const metricTotalLeads = document.getElementById('metric-total-leads');
-const metricActiveCampaigns = document.getElementById('metric-active-campaigns');
+const metricTotalLeads = document.getElementById('accepted-invites-count');
+const metricActiveCampaigns = document.getElementById('active-campaigns-count');
 const logsContainer = document.getElementById('logs-container');
 
 const leadsTableBody = document.getElementById('leads-table-body');
@@ -271,6 +271,8 @@ function connectWS() {
         updateClientStatus("disconnected");
       } else if (data.action === "LEADS_UPDATED") {
         loadLeads();
+      } else if (data.action === "SYNC_PROFILE_DATA") {
+        updateProfileUI(data.profile);
       }
     } catch (e) {
       console.error("Failed to parse WS message:", e);
@@ -288,12 +290,73 @@ function connectWS() {
 }
 
 function updateClientStatus(status) {
+  const statusBadge = document.getElementById('prospecting-status-badge');
   if (status === "connected") {
-    metricClientStatus.textContent = 'Active Link';
-    metricClientStatus.className = 'connected';
+    metricClientStatus.textContent = 'Connected & Synced';
+    metricClientStatus.className = 'badge';
+    if (statusBadge) {
+      statusBadge.textContent = 'Active';
+      statusBadge.className = 'badge status-active';
+    }
   } else {
-    metricClientStatus.textContent = 'Offline';
-    metricClientStatus.className = 'disconnected';
+    metricClientStatus.textContent = 'Awaiting Connection';
+    metricClientStatus.className = 'badge';
+    if (statusBadge) {
+      statusBadge.textContent = 'Inactive';
+      statusBadge.className = 'badge status-inactive';
+    }
+  }
+}
+
+function updateProfileUI(profile) {
+  if (!profile) return;
+  
+  // Update Header greeting
+  const greetingEl = document.getElementById('user-greeting');
+  if (greetingEl && profile.name) {
+    greetingEl.textContent = `Hello ${profile.name.split(' ')[0]},`;
+  }
+  
+  // Update Profile Card
+  const avatarEl = document.getElementById('user-avatar');
+  if (avatarEl && profile.avatar) {
+    avatarEl.src = profile.avatar;
+  }
+  
+  const nameEl = document.getElementById('user-name');
+  if (nameEl && profile.name) {
+    nameEl.textContent = profile.name;
+  }
+  
+  const connectionsEl = document.getElementById('user-connections-count');
+  if (connectionsEl && profile.connections) {
+    connectionsEl.textContent = profile.connections;
+  }
+  
+  const viewsEl = document.getElementById('user-views-count');
+  if (viewsEl && profile.views) {
+    viewsEl.textContent = profile.views;
+  }
+  
+  const pendingEl = document.getElementById('user-pending-count');
+  if (pendingEl && profile.pending) {
+    pendingEl.textContent = profile.pending;
+  }
+  
+  // Automatically show connection is active when receiving data
+  updateClientStatus("connected");
+}
+
+async function loadQueueStats() {
+  try {
+    const res = await fetch(`${API_BASE}/queue-count`);
+    const data = await res.json();
+    const queuedCountEl = document.getElementById('queued-actions-count');
+    if (queuedCountEl) {
+      queuedCountEl.textContent = data.count || 0;
+    }
+  } catch (err) {
+    console.error('Failed to load queue count stats:', err);
   }
 }
 
@@ -313,7 +376,6 @@ fetch(`${API_BASE}/logs`)
     logs.reverse().forEach(log => {
       const logDiv = document.createElement('div');
       logDiv.className = `log-item ${log.level || 'info'}`;
-      // Clean timestamp format
       const time = new Date(log.timestamp).toLocaleTimeString();
       logDiv.innerHTML = `<span style="color: #64748b;">[${time}]</span> ${escapeHTML(log.message)}`;
       logsContainer.appendChild(logDiv);
@@ -324,19 +386,45 @@ fetch(`${API_BASE}/logs`)
 // Poll dashboard counts on load
 fetch(`${API_BASE}/leads`)
   .then(res => res.json())
-  .then(leads => {
-    metricTotalLeads.textContent = leads.length;
+  .then(data => {
+    const leads = data.leads || data;
+    if (metricTotalLeads) {
+      metricTotalLeads.textContent = data.totalCount || leads.length;
+    }
   });
 
 fetch(`${API_BASE}/campaigns`)
   .then(res => res.json())
   .then(camps => {
     const activeCount = camps.filter(c => c.status === 'active').length;
-    metricActiveCampaigns.textContent = activeCount;
+    if (metricActiveCampaigns) {
+      metricActiveCampaigns.textContent = activeCount;
+    }
+    const activeCampCountEl = document.getElementById('active-campaigns-count');
+    if (activeCampCountEl) activeCampCountEl.textContent = activeCount;
   });
 
 // Start WS connection
 connectWS();
+loadQueueStats();
+
+// Poll queue stats every 10 seconds
+setInterval(loadQueueStats, 10000);
+
+// Shortcut button listener to switch tabs
+const btnCampaignShortcut = document.querySelector('.btn-create-campaign-shortcut');
+if (btnCampaignShortcut) {
+  btnCampaignShortcut.addEventListener('click', () => {
+    tabItems.forEach(i => i.classList.remove('active'));
+    tabPanels.forEach(p => p.classList.remove('active'));
+    
+    const campaignsTabItem = document.querySelector('[data-tab="campaigns-tab"]');
+    if (campaignsTabItem) campaignsTabItem.classList.add('active');
+    
+    document.getElementById('campaigns-tab').classList.add('active');
+    loadCampaigns();
+  });
+}
 
 // XSS Sanitizer
 function escapeHTML(str) {

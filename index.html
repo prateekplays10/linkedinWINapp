@@ -22,10 +22,10 @@
       
       <nav class="nav-menu">
         <button class="nav-item active" data-tab="dashboard-tab">
-          <span class="icon">📊</span> Dashboard
+          <span class="icon">🏠</span> Home
         </button>
         <button class="nav-item" data-tab="leads-tab">
-          <span class="icon">👥</span> Leads Board
+          <span class="icon">👥</span> Prospects
         </button>
         <button class="nav-item" data-tab="campaigns-tab">
           <span class="icon">⚡</span> Campaigns
@@ -33,6 +33,10 @@
       </nav>
 
       <div class="sidebar-footer">
+        <div class="upgrade-card">
+          <span class="upgrade-badge">👑 Upgrade</span>
+          <p>Unlock unlimited actions & templates</p>
+        </div>
         <button id="btn-clear-db" class="btn btn-danger-text">Clear CRM Data</button>
       </div>
     </aside>
@@ -41,41 +45,137 @@
     <main class="main-content">
       <!-- DASHBOARD TAB -->
       <section id="dashboard-tab" class="tab-panel active">
-        <header class="tab-header">
-          <h1>Control Center</h1>
-          <p>Real-time campaign dispatcher status and execution telemetry logs.</p>
-        </header>
+        <div class="waalaxy-home-layout">
+          <!-- Center Content -->
+          <div class="home-main-section">
+            <header class="home-header">
+              <div class="header-left">
+                <h1 id="user-greeting">Hello Prospector,</h1>
+                <p class="subtitle">Here is your LinkedIn prospecting overview.</p>
+              </div>
+              <div class="header-right">
+                <select id="time-filter" class="form-select-sm">
+                  <option value="30">Last 30 days</option>
+                  <option value="7">Last 7 days</option>
+                  <option value="90">Last 90 days</option>
+                </select>
+              </div>
+            </header>
 
-        <div class="metrics-grid">
-          <div class="metric-card glass-card">
-            <span class="label">Connected Clients</span>
-            <strong id="metric-client-status" class="disconnected">Offline</strong>
-          </div>
-          <div class="metric-card glass-card">
-            <span class="label">Total Leads</span>
-            <strong id="metric-total-leads">0</strong>
-          </div>
-          <div class="metric-card glass-card">
-            <span class="label">Active Campaigns</span>
-            <strong id="metric-active-campaigns">0</strong>
-          </div>
-        </div>
+            <!-- Cards Row -->
+            <div class="home-cards-row">
+              <!-- LinkedIn Card -->
+              <div class="home-card card-linkedin">
+                <div class="card-title">
+                  <span class="platform-icon">in</span> LinkedIn
+                </div>
+                <div class="card-stats">
+                  <div class="stat-circle">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path class="circle" id="invitation-acceptance-rate-ring" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <text x="18" y="20.35" class="percentage" id="invitation-acceptance-rate-text">0%</text>
+                    </svg>
+                  </div>
+                  <div class="stat-metrics">
+                    <div class="metric">
+                      <span class="metric-num" id="accepted-invites-count">0</span>
+                      <span class="metric-label">Accepted invitations</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <div class="console-box glass-card">
-          <div class="console-header">
-            <h3>Live Telemetry logs</h3>
-            <span class="badge">WebSocket Live Connection</span>
+              <!-- Emails Card -->
+              <div class="home-card card-emails">
+                <div class="card-title">
+                  <span class="platform-icon">✉</span> Emails
+                </div>
+                <p class="card-text">Users get as much as 50% more answers when they also send emails in their campaigns.</p>
+                <button class="btn btn-primary btn-sm btn-unlock-emails" style="width: 100%; margin-top: auto;">Unlock Emails</button>
+              </div>
+            </div>
+
+            <!-- Performance Grid -->
+            <div class="performance-grid">
+              <div class="perf-item card-linkedin-perf">
+                <div class="perf-header">
+                  <span class="platform-icon text-blue">in</span> LinkedIn Performance
+                </div>
+                <div class="perf-stats-row">
+                  <div class="perf-metric">
+                    <span class="perf-num" id="answered-messages-count">0</span>
+                    <span class="perf-label">Answered messages</span>
+                  </div>
+                  <div class="perf-metric">
+                    <span class="perf-num" id="message-response-rate-text">0%</span>
+                    <span class="perf-label">Response rate</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Telemetry logs box -->
+            <div class="console-box home-logs glass-card" style="margin-top: 24px;">
+              <div class="console-header">
+                <h3>Live Telemetry logs</h3>
+                <span class="badge" id="metric-client-status">Awaiting Connection</span>
+              </div>
+              <div id="logs-container" class="logs-feed">
+                <div class="log-item info">Welcome to Link Lead Desktop. Awaiting cloud synchronization...</div>
+              </div>
+            </div>
           </div>
-          <div id="logs-container" class="logs-feed">
-            <div class="log-item info">Welcome to Link Lead Desktop. Awaiting local extensions link...</div>
-          </div>
+
+          <!-- Right Profile Sidebar -->
+          <aside class="home-profile-sidebar">
+            <div class="profile-card">
+              <img id="user-avatar" class="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile Picture">
+              <h3 id="user-name">Guest Profile</h3>
+              <span class="badge badge-freemium" id="user-plan">Freemium plan</span>
+              
+              <div class="profile-stats">
+                <div class="p-stat">
+                  <strong id="user-connections-count">0</strong>
+                  <span>Connections</span>
+                </div>
+                <div class="p-stat">
+                  <strong id="user-pending-count">0</strong>
+                  <span>Pending</span>
+                </div>
+                <div class="p-stat">
+                  <strong id="user-views-count">0</strong>
+                  <span>Profile views</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prospecting Status Card -->
+            <div class="status-card">
+              <div class="status-header">
+                <h3>Prospecting status</h3>
+                <span class="badge status-inactive" id="prospecting-status-badge">Inactive</span>
+              </div>
+              <div class="status-metrics">
+                <div class="s-metric">
+                  <strong id="active-campaigns-count">0</strong>
+                  <span>Active campaigns</span>
+                </div>
+                <div class="s-metric">
+                  <strong id="queued-actions-count">0</strong>
+                  <span>Queued actions</span>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-block btn-create-campaign-shortcut" style="width:100%; margin-top: 16px;">🚀 Create a campaign</button>
+            </div>
+          </aside>
         </div>
       </section>
 
       <!-- LEADS TAB -->
       <section id="leads-tab" class="tab-panel">
         <header class="tab-header">
-          <h1>Leads Directory</h1>
+          <h1>Prospects Directory</h1>
           <p>Lists and status metrics of contacts synced from your extension scraper.</p>
         </header>
 
@@ -149,7 +249,7 @@
               <textarea id="campaign-message" placeholder="Hi {{name}}, thanks for connecting! I wanted to reach out..." rows="4"></textarea>
             </div>
 
-            <button id="btn-create-campaign" class="btn btn-primary">Create Campaign</button>
+            <button id="btn-create-campaign" class="btn btn-primary" style="width: 100%;">Create Campaign</button>
           </div>
 
           <!-- Existing Campaigns List -->
