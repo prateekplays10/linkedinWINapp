@@ -8,132 +8,142 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-layout">
+    
     <!-- Sidebar Navigation -->
-    <aside class="sidebar">
-      <div class="brand-area">
-        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <svg class="header-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="M12 8v4"/>
-          <path d="M12 16h.01"/>
         </svg>
         <h2>Link Lead</h2>
       </div>
-      
-      <nav class="nav-menu">
-        <button class="nav-item active" data-tab="dashboard-tab">
-          <span class="icon">🏠</span> Home
+
+      <nav class="sidebar-menu">
+        <button class="menu-item active" data-tab="home-tab">
+          <span>🏠</span> Home
         </button>
-        <button class="nav-item" data-tab="leads-tab">
-          <span class="icon">👥</span> Prospects
+        <button class="menu-item" data-tab="prospects-tab">
+          <span>👥</span> Prospects
         </button>
-        <button class="nav-item" data-tab="campaigns-tab">
-          <span class="icon">⚡</span> Campaigns
+        <button class="menu-item" data-tab="campaigns-tab">
+          <span>⚡</span> Campaigns
         </button>
       </nav>
 
       <div class="sidebar-footer">
         <div class="upgrade-card">
-          <span class="upgrade-badge">👑 Upgrade</span>
+          <h4>🗃️ UPGRADE</h4>
           <p>Unlock unlimited actions & templates</p>
         </div>
-        <button id="btn-clear-db" class="btn btn-danger-text">Clear CRM Data</button>
+        <button id="btn-clear-crm" class="clear-data-link">Clear CRM Data</button>
       </div>
     </aside>
 
-    <!-- Main View Panel -->
-    <main class="main-content">
-      <!-- DASHBOARD TAB -->
-      <section id="dashboard-tab" class="tab-panel active">
-        <div class="waalaxy-home-layout">
-          <!-- Center Content -->
-          <div class="home-main-section">
+    <!-- Main Workspace Area -->
+    <main class="app-workspace">
+      
+      <!-- HOME PANEL -->
+      <section id="home-tab" class="tab-panel active">
+        <div class="home-grid">
+          
+          <!-- Left Main Column -->
+          <div class="home-main-col">
             <header class="home-header">
-              <div class="header-left">
-                <h1 id="user-greeting">Hello Prospector,</h1>
-                <p class="subtitle">Here is your LinkedIn prospecting overview.</p>
+              <div class="greeting-block">
+                <h1 id="home-greeting">Hello Prospector,</h1>
+                <p>Here is your LinkedIn prospecting overview.</p>
               </div>
-              <div class="header-right">
-                <select id="time-filter" class="form-select-sm">
-                  <option value="30">Last 30 days</option>
-                  <option value="7">Last 7 days</option>
-                  <option value="90">Last 90 days</option>
+              <div class="dropdown-filter">
+                <select>
+                  <option>Last 30 days</option>
+                  <option>Last 7 days</option>
+                  <option>All time</option>
                 </select>
               </div>
             </header>
 
-            <!-- Cards Row -->
-            <div class="home-cards-row">
-              <!-- LinkedIn Card -->
-              <div class="home-card card-linkedin">
+            <!-- Overview Stats Grid -->
+            <div class="overview-cards">
+              <div class="overview-card card-linkedin">
                 <div class="card-title">
-                  <span class="platform-icon">in</span> LinkedIn
+                  <span class="icon-ln">in</span>
+                  <h4>LinkedIn</h4>
                 </div>
-                <div class="card-stats">
-                  <div class="stat-circle">
-                    <svg viewBox="0 0 36 36" class="circular-chart">
+                <div class="card-radial-progress">
+                  <div class="radial-ring">
+                    <svg viewBox="0 0 36 36" class="radial-chart">
                       <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                      <path class="circle" id="invitation-acceptance-rate-ring" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                      <text x="18" y="20.35" class="percentage" id="invitation-acceptance-rate-text">0%</text>
+                      <path id="invite-percent-ring" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     </svg>
+                    <div class="radial-label">0%</div>
                   </div>
-                  <div class="stat-metrics">
-                    <div class="metric">
-                      <span class="metric-num" id="accepted-invites-count">0</span>
-                      <span class="metric-label">Accepted invitations</span>
-                    </div>
+                  <div class="radial-details">
+                    <strong id="stat-accepted-invites">0</strong>
+                    <span>Accepted invitations</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Emails Card -->
-              <div class="home-card card-emails">
+              <div class="overview-card card-emails">
                 <div class="card-title">
-                  <span class="platform-icon">✉</span> Emails
+                  <span class="icon-email">✉</span>
+                  <h4>Emails</h4>
                 </div>
-                <p class="card-text">Users get as much as 50% more answers when they also send emails in their campaigns.</p>
-                <button class="btn btn-primary btn-sm btn-unlock-emails" style="width: 100%; margin-top: auto;">Unlock Emails</button>
+                <p class="email-subtext">Users get as much as 50% more answers when they also send emails in their campaigns.</p>
+                <button class="btn btn-primary btn-unlock">Unlock Emails</button>
               </div>
             </div>
 
             <!-- Performance Grid -->
-            <div class="performance-grid">
-              <div class="perf-item card-linkedin-perf">
+            <div class="perf-row">
+              <div class="perf-card">
                 <div class="perf-header">
-                  <span class="platform-icon text-blue">in</span> LinkedIn Performance
+                  <span class="icon-ln">in</span>
+                  <h4>LinkedIn Performance</h4>
                 </div>
-                <div class="perf-stats-row">
-                  <div class="perf-metric">
-                    <span class="perf-num" id="answered-messages-count">0</span>
-                    <span class="perf-label">Answered messages</span>
+                <div class="perf-stats">
+                  <div class="p-metric">
+                    <strong id="stat-answered-msgs">0</strong>
+                    <span>Answered messages</span>
                   </div>
-                  <div class="perf-metric">
-                    <span class="perf-num" id="message-response-rate-text">0%</span>
-                    <span class="perf-label">Response rate</span>
+                  <div class="p-metric">
+                    <strong id="stat-response-rate">0%</strong>
+                    <span>Response rate</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Telemetry logs box -->
-            <div class="console-box home-logs glass-card" style="margin-top: 24px;">
+            <!-- Console Log Feed -->
+            <div class="console-card">
               <div class="console-header">
-                <h3>Live Telemetry logs</h3>
-                <span class="badge" id="metric-client-status">Awaiting Connection</span>
+                <h4>Live Telemetry logs</h4>
+                <span id="console-connection-badge" class="badge-status awaiting">AWAITING CONNECTION</span>
               </div>
-              <div id="logs-container" class="logs-feed">
-                <div class="log-item info">Welcome to Link Lead Desktop. Awaiting cloud synchronization...</div>
+              <div id="logs-container" class="console-box">
+                Welcome to Link Lead Desktop. Awaiting cloud synchronization...
               </div>
             </div>
           </div>
 
-          <!-- Right Profile Sidebar -->
-          <aside class="home-profile-sidebar">
+          <!-- Right Profile Column -->
+          <div class="home-profile-col">
             <div class="profile-card">
-              <img id="user-avatar" class="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile Picture">
-              <h3 id="user-name">Guest Profile</h3>
-              <span class="badge badge-freemium" id="user-plan">Freemium plan</span>
+              <!-- Sync Pulser Confirmation -->
+              <div class="profile-sync-indicator">
+                <span class="pulse-dot"></span>
+                <span id="profile-sync-text">LinkedIn Profile</span>
+              </div>
+
+              <div class="avatar-container">
+                <img id="user-avatar" class="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar">
+                <span class="sync-check-badge" id="sync-check">✔</span>
+              </div>
               
+              <h3 id="user-name">Guest Profile</h3>
+              <span class="plan-badge">FREEMIUM PLAN</span>
+
               <div class="profile-stats">
                 <div class="p-stat">
                   <strong id="user-connections-count">0</strong>
@@ -150,118 +160,88 @@
               </div>
             </div>
 
-            <!-- Prospecting Status Card -->
-            <div class="status-card">
-              <div class="status-header">
-                <h3>Prospecting status</h3>
-                <span class="badge status-inactive" id="prospecting-status-badge">Inactive</span>
+            <div class="prospecting-card">
+              <div class="prospecting-header">
+                <h4>Prospecting status</h4>
+                <span id="prospecting-status-badge" class="badge-status inactive">INACTIVE</span>
               </div>
-              <div class="status-metrics">
-                <div class="s-metric">
+              <div class="prospecting-stats">
+                <div class="pr-stat">
                   <strong id="active-campaigns-count">0</strong>
                   <span>Active campaigns</span>
                 </div>
-                <div class="s-metric">
+                <div class="pr-stat">
                   <strong id="queued-actions-count">0</strong>
                   <span>Queued actions</span>
                 </div>
               </div>
-              <button class="btn btn-primary btn-block btn-create-campaign-shortcut" style="width:100%; margin-top: 16px;">🚀 Create a campaign</button>
+              <button id="btn-create-campaign-shortcut" class="btn btn-primary btn-block">🚀 Create a campaign</button>
             </div>
-          </aside>
+          </div>
+
         </div>
       </section>
 
-      <!-- LEADS TAB -->
-      <section id="leads-tab" class="tab-panel">
+      <!-- PROSPECTS PANEL -->
+      <section id="prospects-tab" class="tab-panel">
         <header class="tab-header">
-          <h1>Prospects Directory</h1>
-          <p>Lists and status metrics of contacts synced from your extension scraper.</p>
+          <h2>Prospects Database</h2>
+          <input type="text" id="prospect-search" placeholder="Search leads by name, company, list...">
         </header>
-
-        <div class="leads-controls">
-          <div class="search-wrap">
-            <input type="text" id="leads-search" placeholder="Search contacts...">
-          </div>
-        </div>
-
-        <div class="table-container glass-card">
-          <table>
+        <div class="table-container">
+          <table class="leads-table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Prospect</th>
+                <th>Headline</th>
                 <th>Status</th>
-                <th>List</th>
-                <th>Location / Company</th>
-                <th>Email / Phone</th>
+                <th>Action List</th>
               </tr>
             </thead>
             <tbody id="leads-table-body">
               <tr>
-                <td colspan="5" class="empty-state">No contacts synced yet. Open your Chrome Extension to start scraping.</td>
+                <td colspan="4" class="empty-cell">No prospects synced in Database yet. Launch Chrome Extension scraper.</td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <!-- Pagination Controls -->
-        <div class="pagination-controls" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-          <span id="pagination-info" style="font-size: 13px; color: var(--text-muted);">Showing 0-0 of 0 leads</span>
-          <div style="display: flex; gap: 8px;">
-            <button id="btn-prev-page" class="btn btn-secondary btn-action-small" style="width: auto;" disabled>Previous</button>
-            <button id="btn-next-page" class="btn btn-secondary btn-action-small" style="width: auto;" disabled>Next</button>
-          </div>
-        </div>
       </section>
 
-      <!-- CAMPAIGNS TAB -->
+      <!-- CAMPAIGNS PANEL -->
       <section id="campaigns-tab" class="tab-panel">
         <header class="tab-header">
-          <h1>Prospecting Campaigns</h1>
-          <p>Create sequences and schedule messages for target segments.</p>
+          <h2>Campaign Center</h2>
         </header>
-
-        <div class="campaign-builder-grid">
-          <!-- Create Campaign Form -->
-          <div class="builder-card glass-card">
+        <div class="campaign-creator-grid">
+          <div class="creator-card">
             <h3>Create Campaign</h3>
             <div class="form-group">
-              <label for="campaign-name">Campaign Name</label>
-              <input type="text" id="campaign-name" placeholder="e.g. Sales Manager Outreach India">
+              <label for="campaign-name-input">Campaign Name</label>
+              <input type="text" id="campaign-name-input" placeholder="e.g. LinkedIn Invite Sequence">
             </div>
-
             <div class="form-group">
-              <label for="campaign-sequence">Select Sequence Template</label>
-              <select id="campaign-sequence">
-                <option value="visit_invite_message">(Recommended) Profile Visit + Connection Invite + Message</option>
-                <option value="invite_only">Connection Invite (Only)</option>
-                <option value="message_only">Message Direct Contacts (Only)</option>
+              <label for="sequence-select">Action Sequence</label>
+              <select id="sequence-select">
+                <option value="visit-invite">Profile Visit -> Connection Request (Standard)</option>
+                <option value="visit-message">Profile Visit -> Follow-up Message</option>
+                <option value="invite-only">Connection Request Only</option>
               </select>
             </div>
-
-            <div class="form-group">
-              <label for="campaign-note">Invite Note (Optional)</label>
-              <textarea id="campaign-note" placeholder="Hi {{name}}, I would love to connect..." rows="3"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="campaign-message">Follow-up Message Body</label>
-              <textarea id="campaign-message" placeholder="Hi {{name}}, thanks for connecting! I wanted to reach out..." rows="4"></textarea>
-            </div>
-
-            <button id="btn-create-campaign" class="btn btn-primary" style="width: 100%;">Create Campaign</button>
+            <button id="btn-submit-campaign" class="btn btn-primary btn-block">Initialize Campaign</button>
           </div>
 
-          <!-- Existing Campaigns List -->
-          <div class="campaigns-list-card glass-card">
+          <div class="creator-card">
             <h3>Active Campaigns</h3>
-            <div id="campaigns-feed" class="campaigns-feed-list">
-              <div class="empty-state">No campaigns created yet. Create one on the left.</div>
+            <div id="campaigns-list" class="campaigns-list-feed">
+              <div class="empty-camp">No active campaigns. Configure a template.</div>
             </div>
           </div>
         </div>
       </section>
+
     </main>
+
   </div>
+  <script src="renderer.js"></script>
 </body>
 </html>
