@@ -76,9 +76,32 @@ function connectWS() {
           renderSyncedProfile(data.profile);
           break;
 
-        case 'LEADS_UPDATED':
-          loadLeads();
-          loadQueueStats();
+        case 'DATABASE_EVENT':
+          console.log("Database update captured:", data.event);
+          if (data.event.table_name === 'leads') {
+            loadLeads();
+          }
+          if (data.event.table_name === 'queue') {
+            loadQueueStats();
+          }
+          if (data.event.table_name === 'campaigns') {
+            loadCampaigns();
+          }
+          if (data.event.table_name === 'logs') {
+            fetch(`${API_BASE}/logs`)
+              .then(res => res.json())
+              .then(logs => {
+                logsContainer.innerHTML = '';
+                logs.reverse().forEach(log => {
+                  const div = document.createElement('div');
+                  div.className = `log-item ${log.level || 'info'}`;
+                  const time = new Date(log.timestamp).toLocaleTimeString();
+                  div.innerHTML = `<span style="color: #64748b;">[${time}]</span> ${escapeHTML(log.message)}`;
+                  logsContainer.appendChild(div);
+                });
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+              });
+          }
           break;
       }
     } catch (e) {
