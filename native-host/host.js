@@ -8,37 +8,57 @@ const WebSocket = require('ws');
 // Log files for debugging (since console.log is stdout and will crash Chrome parser)
 const LOG_FILE = path.join(__dirname, 'native-host.log');
 function log(msg) {
-  fs.appendFileSync(LOG_FILE, `[${new Date().toLocaleTimeString()}] ${msg}\n`);
+  try {
+    fs.appendFileSync(LOG_FILE, `[${new Date().toLocaleTimeString()}] ${msg}\n`);
+  } catch (_) {}
 }
 
 log('Native Host started.');
 
-// Connect to Electron's local WebSocket server
-const ws = new WebSocket('ws://localhost:9292');
+let ws = null;
+let reconnectTimer = null;
 
-ws.on('open', () => {
-  log('Connected to Electron App WebSocket.');
-  ws.send(JSON.stringify({ action: 'REGISTER_EXTENSION', version: '2.1.0' }));
-});
-
-ws.on('message', (data) => {
-  try {
-    const payload = JSON.parse(data.toString());
-    log(`Received from Electron: ${payload.action}`);
-    sendToChrome(payload);
-  } catch (err) {
-    log(`Error parsing message from Electron: ${err.message}`);
+function connectWS() {
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+    return;
   }
-});
 
-ws.on('error', (err) => {
-  log(`WebSocket error: ${err.message}`);
-});
+  log('Attempting connection to Electron WebSocket...');
+  ws = new WebSocket('ws://localhost:9292');
 
-ws.on('close', () => {
-  log('Electron App WebSocket connection closed.');
-  process.exit(0);
-});
+  ws.on('open', () => {
+    log('Connected to Electron App WebSocket.');
+    ws.send(JSON.stringify({ action: 'REGISTER_EXTENSION', version: '2.1.0' }));
+  });
+
+  ws.on('message', (data) => {
+    try {
+      const payload = JSON.parse(data.toString());
+      log(`Received from Electron: ${payload.action}`);
+      sendToChrome(payload);
+    } catch (err) {
+      log(`Error parsing message from Electron: ${err.message}`);
+    }
+  });
+
+  ws.on('error', (err) => {
+    log(`WebSocket error: ${err.message}`);
+  });
+
+  ws.on('close', () => {
+    log('Electron App WebSocket connection closed or failed. Retrying in 5 seconds...');
+    ws = null;
+    triggerReconnect();
+  });
+}
+
+function triggerReconnect() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(connectWS, 5000);
+}
+
+// Start first connection attempt
+connectWS();
 
 // ─── CHROME PROTOCOL: READ STDIN ─────────────────────────────────────────────
 let inputBuffer = Buffer.alloc(0);
@@ -65,11 +85,11 @@ function processBuffer() {
       const msg = JSON.parse(msgBuf.toString('utf8'));
       log(`Received from Chrome: ${msg.action}`);
       
-      // Relay immediately to Electron WebSocket
-      if (ws.readyState === WebSocket.OPEN) {
+      // Relay immediately to Electron WebSocket if connected
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(msg));
       } else {
-        log('Failed to relay: WebSocket not connected.');
+        log(`Failed to relay action "${msg.action}": WebSocket not connected.`);
       }
     } catch (err) {
       log(`Error parsing message from Chrome: ${err.message}`);
@@ -92,7 +112,13 @@ function sendToChrome(msg) {
   }
 }
 
-// Handle termination cleanly
+// ─── TERMINATION ─────────────────────────────────────────────────────────────
+// Exit immediately if Chrome closes stdin (extension disabled or Chrome closed)
+process.stdin.on('end', () => {
+  log('Stdin closed (Chrome disconnected). Exiting.');
+  process.exit(0);
+});
+
 process.on('SIGTERM', () => {
   log('Received SIGTERM. Exiting.');
   process.exit(0);
