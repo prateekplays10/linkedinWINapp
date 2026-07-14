@@ -1,12 +1,12 @@
-﻿// renderer.js â€” Link Lead Desktop v2.0.0
+// renderer.js — Link Lead Desktop Client with Local SQLite Data Engine
 'use strict';
 
-const API_BASE = 'https://mbtg3x8u.function2.insforge.app/api';
+const db = require('./database/db.js');
 let socket = null;
 let currentPage = 0;
 const PAGE_SIZE = 50;
 
-// â”€â”€â”€ NAVIGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
 document.querySelectorAll('.menu-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
@@ -21,14 +21,14 @@ document.querySelectorAll('.menu-item').forEach(btn => {
   });
 });
 
-// â”€â”€â”€ WEBSOCKET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── WEBSOCKET (to Local Broker) ─────────────────────────────────────────────
 const badge    = document.getElementById('console-connection-badge');
 const syncText = document.getElementById('profile-sync-text');
 const logsBox  = document.getElementById('logs-container');
 
 function connectWS() {
   if (socket) return;
-  socket = new WebSocket('wss://mbtg3x8u.function2.insforge.app/api');
+  socket = new WebSocket('ws://localhost:9292');
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ action: 'REGISTER_DESKTOP' }));
@@ -50,42 +50,41 @@ function connectWS() {
         case 'SYNC_PROFILE_DATA':
           renderProfile(d.profile);
           break;
-        case 'DATABASE_EVENT':
-          onDatabaseEvent(d.event);
+        case 'DATABASE_UPDATED':
+          // Reload matching views when SQLite data updates
+          if (d.table === 'prospects') { loadLeads(); loadStats(); }
+          if (d.table === 'queue')     { loadStats(); loadOutreachStats(); }
+          if (d.table === 'campaigns') loadCampaigns();
+          if (d.table === 'logs')      loadRemoteLogs();
           break;
 
-        // â”€â”€ Real-time scraping progress from Extension â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Real-time scraping progress from Extension
         case 'SCRAPE_PROGRESS': {
           const { count, limit, type, latest } = d;
           const pct = limit > 0 ? Math.round((count / limit) * 100) : 0;
-          showProgress(`Scraping ${type}â€¦ (${count}/${limit}) â€” Last: ${latest || ''}`);
-          // Update the progress fill bar
+          showProgress(`Scraping ${type}… (${count}/${limit}) — Last: ${latest || ''}`);
           const bar = document.getElementById('scrape-fill-bar');
           if (bar) bar.style.width = `${pct}%`;
           break;
         }
 
-        // â”€â”€ A lead was captured â€” refresh the prospects table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'LEAD_SCRAPED':
           loadLeads();
           loadStats();
           break;
 
-        // â”€â”€ Scraping stopped (from Extension or Win App) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'SCRAPE_STOPPED':
           hideProgress();
           loadStats();
           break;
 
-        // â”€â”€ Task completed by Extension â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'TASK_COMPLETED':
           loadStats();
           loadRemoteLogs();
           break;
 
-        // â”€â”€ Safety blocked â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         case 'TASK_BLOCKED':
-          showToast(`âš ï¸ Safety: ${d.reason}`);
+          showToast(`⚠️ Safety: ${d.reason}`);
           break;
       }
     } catch (_) {}
@@ -94,7 +93,6 @@ function connectWS() {
   socket.onclose = () => {
     socket = null;
     setSyncUI('awaiting');
-    // Reconnect with exponential backoff (5s, 10s, 20s, max 30s)
     const delay = Math.min(30000, 5000 * (1 + Math.random()));
     setTimeout(connectWS, delay);
   };
@@ -124,26 +122,17 @@ function setSyncUI(status) {
   }
 }
 
-function onDatabaseEvent(evt) {
-  if (!evt) return;
-  if (evt.table_name === 'leads')     { loadLeads(); loadStats(); }
-  if (evt.table_name === 'queue')     { loadStats(); loadOutreachStats(); }
-  if (evt.table_name === 'campaigns') loadCampaigns();
-  if (evt.table_name === 'logs')      loadRemoteLogs();
-}
-
-// â”€â”€â”€ PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PROFILE ─────────────────────────────────────────────────────────────────
 function renderProfile(p) {
   if (!p || !p.name) return;
 
-  // Cache to localStorage so Win App never reverts to Guest Profile on WS disconnect
   try { localStorage.setItem('ll_cached_profile', JSON.stringify(p)); } catch (_) {}
 
-  document.getElementById('user-name').textContent          = p.name;
-  document.getElementById('user-headline').textContent      = p.headline || '';
-  document.getElementById('user-connections-count').textContent = p.connections || 'â€“';
-  document.getElementById('user-pending-count').textContent     = p.pending    || 'â€“';
-  document.getElementById('user-views-count').textContent       = p.views      || 'â€“';
+  document.getElementById('user-name').textContent              = p.name;
+  document.getElementById('user-headline').textContent          = p.headline || '';
+  document.getElementById('user-connections-count').textContent = p.connections || '–';
+  document.getElementById('user-pending-count').textContent     = p.pending    || '–';
+  document.getElementById('user-views-count').textContent       = p.views      || '–';
 
   const firstName = p.name.split(' ')[0];
   document.getElementById('home-greeting').textContent = `Hello ${firstName},`;
@@ -156,13 +145,11 @@ function renderProfile(p) {
     };
   }
 
-  // Show the sync check icon if profile is real
   if (p.name !== 'Prospector' && p.name !== 'Guest Profile') {
     document.getElementById('sync-check').style.display = 'inline-flex';
   }
 }
 
-// Load cached profile immediately on boot (before any WS data arrives)
 function loadCachedProfile() {
   try {
     const cached = localStorage.getItem('ll_cached_profile');
@@ -170,39 +157,48 @@ function loadCachedProfile() {
   } catch (_) {}
 }
 
-// â”€â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── STATS (NATIVE SQL QUERIES) ──────────────────────────────────────────────
 async function loadStats() {
   try {
-    const res = await fetch(`${API_BASE}/stats`);
-    const s = await res.json();
-    document.getElementById('stat-total-leads').textContent   = s.leads     || 0;
-    document.getElementById('stat-invites-sent').textContent  = s.invites   || 0;
-    document.getElementById('stat-messages-sent').textContent = s.messages  || 0;
-    document.getElementById('stat-campaigns').textContent     = s.campaigns || 0;
-    document.getElementById('active-campaigns-count').textContent = s.campaigns || 0;
-    document.getElementById('queued-actions-count').textContent   = s.pending   || 0;
-    document.getElementById('stat-queued').textContent            = s.pending   || 0;
+    const totalLeads = db.prepare("SELECT COUNT(*) as count FROM prospects").get().count;
+    const invitesSent = db.prepare("SELECT COUNT(*) as count FROM queue WHERE action_type = 'send_invite' AND status = 'executed'").get().count;
+    const messagesSent = db.prepare("SELECT COUNT(*) as count FROM queue WHERE action_type = 'send_message' AND status = 'executed'").get().count;
+    const campaignsCount = db.prepare("SELECT COUNT(*) as count FROM campaigns").get().count;
+    const queuedCount = db.prepare("SELECT COUNT(*) as count FROM queue WHERE status = 'pending'").get().count;
+    const executedCount = db.prepare("SELECT COUNT(*) as count FROM queue WHERE status = 'executed'").get().count;
 
-    const invites = s.invites || 0;
-    const total   = s.leads   || 1;
-    const pct     = Math.min(100, Math.round((invites / total) * 100));
+    document.getElementById('stat-total-leads').textContent   = totalLeads;
+    document.getElementById('stat-invites-sent').textContent  = invitesSent;
+    document.getElementById('stat-messages-sent').textContent = messagesSent;
+    document.getElementById('stat-campaigns').textContent     = campaignsCount;
+    document.getElementById('active-campaigns-count').textContent = campaignsCount;
+    document.getElementById('queued-actions-count').textContent   = queuedCount;
+    document.getElementById('stat-queued').textContent            = queuedCount;
+
+    const pct = totalLeads > 0 ? Math.min(100, Math.round((invitesSent / totalLeads) * 100)) : 0;
     document.getElementById('invite-percent-ring').setAttribute('stroke-dasharray', `${pct},100`);
     document.getElementById('invite-pct-label').textContent    = `${pct}%`;
-    document.getElementById('stat-accepted-invites').textContent = invites;
+    document.getElementById('stat-accepted-invites').textContent = invitesSent;
 
-    // Prospecting badge
+    // Safety panel counters
+    document.getElementById('sl-invites').textContent = `${invitesSent} / 40`;
+    document.getElementById('sl-messages').textContent = `${messagesSent} / 80`;
+    document.getElementById('sl-total').textContent = `${executedCount} / 120`;
+
     const prosBadge = document.getElementById('prospecting-status-badge');
-    if (s.pending > 0) {
+    if (queuedCount > 0) {
       prosBadge.textContent = 'ACTIVE';
       prosBadge.className = 'badge-status connected';
     } else {
       prosBadge.textContent = 'INACTIVE';
       prosBadge.className = 'badge-status inactive';
     }
-  } catch (_) {}
+  } catch (err) {
+    console.error('Error loading stats:', err.message);
+  }
 }
 
-// â”€â”€â”€ LEADS TABLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── LEADS TABLE (NATIVE SQL SEARCH/FILTER) ──────────────────────────────────
 const leadsBody    = document.getElementById('leads-table-body');
 const searchInput  = document.getElementById('prospect-search');
 const filterSource = document.getElementById('filter-source');
@@ -215,12 +211,32 @@ async function loadLeads() {
   const offset = currentPage * PAGE_SIZE;
 
   try {
-    const res = await fetch(`${API_BASE}/leads?search=${encodeURIComponent(search)}&source=${source}&status=${status}&limit=${PAGE_SIZE}&offset=${offset}`);
-    const data = await res.json();
-    const leads = data.leads || [];
-    const total = data.total || 0;
+    let query = 'SELECT * FROM prospects WHERE 1=1';
+    const params = [];
 
-    document.getElementById('pagination-info').textContent = `Page ${currentPage + 1} â€¢ ${total} total`;
+    if (search) {
+      query += ' AND (name LIKE ? OR headline LIKE ? OR company LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    if (source !== 'all') {
+      query += ' AND source = ?';
+      params.push(source);
+    }
+    if (status !== 'all') {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+
+    // Get total count for pagination
+    let countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as count');
+    const total = db.prepare(countQuery).get(params).count;
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(PAGE_SIZE, offset);
+
+    const leads = db.prepare(query).all(params);
+
+    document.getElementById('pagination-info').textContent = `Page ${currentPage + 1} • ${total} total`;
     document.getElementById('btn-prev-page').disabled = currentPage === 0;
     document.getElementById('btn-next-page').disabled = (offset + PAGE_SIZE) >= total;
 
@@ -255,18 +271,18 @@ async function loadLeads() {
               </div>
               <div>
                 <div class="lead-name">${safe(l.name)}</div>
-                <a href="${safe(l.profile_url)}" target="_blank" class="lead-url">View Profile â†—</a>
+                <a href="${safe(l.profile_url)}" target="_blank" class="lead-url">View Profile ↗</a>
               </div>
             </div>
           </td>
-          <td class="lead-headline">${safe(l.headline || 'â€”')}</td>
-          <td><span class="source-badge ${l.source || 'search'}">${l.source === 'group' ? 'ðŸ‘¥ Group' : 'ðŸ” Search'}</span></td>
+          <td class="lead-headline">${safe(l.headline || '—')}</td>
+          <td><span class="source-badge ${l.source || 'search'}">${l.source === 'group' ? '👥 Group' : '🔍 Search'}</span></td>
           <td><span class="status-pill" style="color:${sc.color};border-color:${sc.color}">${sc.label}</span></td>
           <td>
             <div class="lead-actions">
-              <button class="btn-action" onclick="visitLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Visit Profile">ðŸ‘</button>
-              <button class="btn-action" onclick="inviteLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send Invite">ðŸ¤</button>
-              <button class="btn-action" onclick="messageLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send DM">ðŸ’¬</button>
+              <button class="btn-action" onclick="visitLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Visit Profile">👁️</button>
+              <button class="btn-action" onclick="inviteLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send Invite">🤝</button>
+              <button class="btn-action" onclick="messageLead('${safe(l.id)}','${safe(l.profile_url)}')" title="Send DM">💬</button>
             </div>
           </td>
         </tr>`;
@@ -276,29 +292,33 @@ async function loadLeads() {
   }
 }
 
-// Per-lead action buttons
+// Per-lead action triggers
 window.visitLead = async (id, url) => {
   await queueSingleTask(id, url, 'visit_profile');
-  showToast('Visit task queued for Extension!');
+  showToast('Visit task queued locally!');
 };
 window.inviteLead = async (id, url) => {
   await queueSingleTask(id, url, 'send_invite');
-  showToast('Invite task queued for Extension!');
+  showToast('Invite task queued locally!');
 };
 window.messageLead = async (id, url) => {
   const msg = prompt('Enter your message for this lead:');
   if (!msg) return;
   await queueSingleTask(id, url, 'send_message', msg);
-  showToast('Message task queued for Extension!');
+  showToast('Message task queued locally!');
 };
 
 async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
-  await fetch(`${API_BASE}/queue`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lead_id: leadId, profile_url: profileUrl, action_type: actionType, message_body: message })
-  }).catch(() => {});
-  loadStats();
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO queue (lead_id, profile_url, action_type, message_body, status)
+      VALUES (?, ?, ?, ?, 'pending')
+    `);
+    stmt.run(leadId, profileUrl, actionType, message);
+    loadStats();
+  } catch (err) {
+    console.error('Failed to queue task:', err.message);
+  }
 }
 
 // Pagination
@@ -308,7 +328,7 @@ searchInput.addEventListener('input', () => { currentPage = 0; loadLeads(); });
 filterSource.addEventListener('change', () => { currentPage = 0; loadLeads(); });
 filterStatus.addEventListener('change', () => { currentPage = 0; loadLeads(); });
 
-// â”€â”€â”€ SCRAPER CONTROLS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SCRAPER CONTROLS ────────────────────────────────────────────────────────
 function getScraperConfig() {
   return {
     minDelay:    parseInt(document.getElementById('inp-min-delay').value) || 12,
@@ -336,7 +356,7 @@ document.getElementById('btn-start-group').addEventListener('click', async () =>
   if (socket && socket.readyState === 1) {
     socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'group', targetUrl: url, limit, config: getScraperConfig() }));
   }
-  showProgress(`Scraping group membersâ€¦ (0/${limit})`);
+  showProgress(`Scraping group members… (0/${limit})`);
 });
 
 document.getElementById('btn-start-search').addEventListener('click', async () => {
@@ -348,7 +368,7 @@ document.getElementById('btn-start-search').addEventListener('click', async () =
   if (socket && socket.readyState === 1) {
     socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'search', targetUrl, limit, config: getScraperConfig() }));
   }
-  showProgress(`Scraping search resultsâ€¦ (0/${limit})`);
+  showProgress(`Scraping search results… (0/${limit})`);
 });
 
 document.getElementById('btn-start-post').addEventListener('click', async () => {
@@ -359,7 +379,7 @@ document.getElementById('btn-start-post').addEventListener('click', async () => 
   if (socket && socket.readyState === 1) {
     socket.send(JSON.stringify({ action: 'REQUEST_SCRAPE', type: 'search', targetUrl, limit, config: getScraperConfig() }));
   }
-  showProgress(`Scraping post engagers for "${keyword}"â€¦ (0/${limit})`);
+  showProgress(`Scraping post engagers for "${keyword}"… (0/${limit})`);
 });
 
 document.getElementById('btn-stop-all').addEventListener('click', async () => {
@@ -372,21 +392,31 @@ document.getElementById('btn-stop-scrape-bar').addEventListener('click', () => {
   hideProgress();
 });
 
-// â”€â”€â”€ CAMPAIGNS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CAMPAIGNS (NATIVE VISUAL BUILDER INTEGRATION) ───────────────────────────
 async function loadCampaigns() {
   try {
-    const res = await fetch(`${API_BASE}/campaigns`);
-    const camps = await res.json();
+    const campaigns = db.prepare('SELECT * FROM campaigns ORDER BY created_at DESC').all();
     const el = document.getElementById('campaigns-list');
-    if (!camps.length) { el.innerHTML = '<div class="empty-camp">No campaigns yet.</div>'; return; }
-    el.innerHTML = camps.map(c => `
-      <div class="camp-item">
-        <div class="camp-info">
+    if (!campaigns.length) { el.innerHTML = '<div class="empty-camp">No active campaigns.</div>'; return; }
+    
+    el.innerHTML = campaigns.map(c => {
+      const total = db.prepare("SELECT COUNT(*) as count FROM queue WHERE campaign_id = ?").get(c.id).count;
+      const completed = db.prepare("SELECT COUNT(*) as count FROM queue WHERE campaign_id = ? AND status = 'executed'").get(c.id).count;
+      const pending = db.prepare("SELECT COUNT(*) as count FROM queue WHERE campaign_id = ? AND status = 'pending'").get(c.id).count;
+      return `
+      <div class="camp-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
           <h4>${safe(c.name)}</h4>
-          <span>${c.sequence_type}</span>
+          <span class="camp-status-badge">${c.status}</span>
         </div>
-        <span class="camp-status-badge">${c.status}</span>
-      </div>`).join('');
+        <div style="font-size:11px; color:#64748b;">Sequence: <strong>${c.sequence_type}</strong></div>
+        <div style="display:flex; gap:12px; font-size:11px; background:#f1f5f9; padding:4px 8px; border-radius:4px;">
+          <div>Pending: <strong>${pending}</strong></div>
+          <div>Success: <strong style="color:#22c55e;">${completed}</strong></div>
+          <div>Total: <strong>${total}</strong></div>
+        </div>
+      </div>`;
+    }).join('');
   } catch (_) {}
 }
 
@@ -400,54 +430,109 @@ document.getElementById('btn-submit-campaign').addEventListener('click', async (
   if (!name) { showFeedback(fb, 'Enter a campaign name.', 'error'); return; }
 
   try {
-    const res = await fetch(`${API_BASE}/launch-campaign`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, sequence_type: seq, message_body: message, lead_filter: filter })
+    const campaignId = 'camp_' + Math.random().toString(36).substring(2, 11);
+    
+    // 1. Insert Campaign into campaigns table
+    db.prepare('INSERT INTO campaigns (id, name, sequence_type, message_body) VALUES (?, ?, ?, ?)').run(
+      campaignId, name, seq, message
+    );
+
+    // 2. Select target leads based on lead filter
+    let leadQuery = "SELECT * FROM prospects WHERE status = 'captured'";
+    const params = [];
+    if (filter === 'group') {
+      leadQuery += " AND source = 'group'";
+    } else if (filter === 'search') {
+      leadQuery += " AND source = 'search'";
+    }
+    
+    const targetLeads = db.prepare(leadQuery).all();
+
+    // 3. Populate outreach tasks in the queue table
+    let actionSequence = [];
+    if (seq === 'visit-invite') {
+      actionSequence = ['visit_profile', 'send_invite'];
+    } else if (seq === 'visit-invite-message') {
+      actionSequence = ['visit_profile', 'send_invite', 'send_message'];
+    } else if (seq === 'invite-only') {
+      actionSequence = ['send_invite'];
+    } else if (seq === 'message-only') {
+      actionSequence = ['send_message'];
+    }
+
+    let queuedCount = 0;
+    targetLeads.forEach(lead => {
+      // Add first action in the sequence to the queue
+      const initialAction = actionSequence[0];
+      
+      // Personalize message variables {{name}}, {{company}}
+      let personalizedMsg = message;
+      if (personalizedMsg) {
+        personalizedMsg = personalizedMsg
+          .replace(/\{\{name\}\}/gi, lead.name)
+          .replace(/\{\{company\}\}/gi, lead.company || 'your company')
+          .replace(/\{\{headline\}\}/gi, lead.headline || '');
+      }
+
+      db.prepare(`
+        INSERT INTO queue (lead_id, campaign_id, profile_url, action_type, message_body, status)
+        VALUES (?, ?, ?, ?, ?, 'pending')
+      `).run(lead.id, campaignId, lead.profile_url, initialAction, personalizedMsg || null);
+      
+      queuedCount++;
     });
-    const j = await res.json();
-    if (j.queued !== undefined) {
-      showFeedback(fb, `âœ“ Launched! ${j.queued} leads Ã— ${j.tasks / j.queued | 0} steps = ${j.tasks} tasks queued.`, 'success');
-      loadCampaigns(); loadStats();
-    } else showFeedback(fb, j.error || 'Failed.', 'error');
-  } catch (e) { showFeedback(fb, e.message, 'error'); }
+
+    showFeedback(fb, `✓ Launched! Queued ${queuedCount} tasks for processing.`, 'success');
+    
+    // Reset forms
+    document.getElementById('campaign-name-input').value = '';
+    document.getElementById('campaign-message-input').value = '';
+    
+    loadCampaigns();
+    loadStats();
+  } catch (e) { 
+    showFeedback(fb, e.message, 'error'); 
+  }
 });
 
-// â”€â”€â”€ OUTREACH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── OUTREACH ────────────────────────────────────────────────────────────────
 async function loadOutreachStats() {
   try {
-    const res = await fetch(`${API_BASE}/stats`);
-    const s = await res.json();
-    document.getElementById('qm-pending').textContent  = s.pending  ?? 'â€“';
-    document.getElementById('qm-executed').textContent = s.executed ?? 'â€“';
-    document.getElementById('qm-failed').textContent   = 'â€“';
+    const pending = db.prepare("SELECT COUNT(*) as count FROM queue WHERE status = 'pending'").get().count;
+    const executed = db.prepare("SELECT COUNT(*) as count FROM queue WHERE status = 'executed'").get().count;
+    const failed = db.prepare("SELECT COUNT(*) as count FROM queue WHERE status = 'failed'").get().count;
+
+    document.getElementById('qm-pending').textContent  = pending;
+    document.getElementById('qm-executed').textContent = executed;
+    document.getElementById('qm-failed').textContent   = failed;
   } catch (_) {}
   loadRemoteLogs();
 }
 
 async function loadRemoteLogs() {
   try {
-    const res = await fetch(`${API_BASE}/logs`);
-    const logs = await res.json();
-    const box = document.getElementById('outreach-log');
-    if (!logs.length) { box.textContent = 'No activity yet.'; return; }
-    box.innerHTML = logs.slice(0, 20).map(l => {
-      const t = new Date(l.created_at).toLocaleTimeString();
-      const cls = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#94a3b8' }[l.level] || '#94a3b8';
-      return `<div style="color:${cls};font-size:11px;margin-bottom:2px">[${t}] ${safe(l.message)}</div>`;
-    }).join('');
-  } catch (_) {}
+    const logs = db.prepare('SELECT * FROM logs ORDER BY created_at DESC LIMIT 30').all();
+    
+    // Outreach page logs
+    const outreachBox = document.getElementById('outreach-log');
+    if (!logs.length) { 
+      outreachBox.textContent = 'No activity yet.'; 
+    } else {
+      outreachBox.innerHTML = logs.slice(0, 20).map(l => {
+        const t = new Date(l.created_at).toLocaleTimeString();
+        const cls = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#94a3b8' }[l.level] || '#94a3b8';
+        return `<div style="color:${cls};font-size:11px;margin-bottom:2px">[${t}] ${safe(l.message)}</div>`;
+      }).join('');
+    }
 
-  // Also update logs console on home tab
-  try {
-    const res = await fetch(`${API_BASE}/logs`);
-    const logs = await res.json();
-    logsBox.innerHTML = logs.slice(0, 30).map(l => {
+    // Home page telemetry box
+    logsBox.innerHTML = logs.map(l => {
       const t = new Date(l.created_at).toLocaleTimeString();
       const cls = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#94a3b8' }[l.level] || '#94a3b8';
       return `<div style="color:${cls};font-size:11px;margin-bottom:2px">[${t}] ${safe(l.message)}</div>`;
     }).join('');
     logsBox.scrollTop = logsBox.scrollHeight;
+
   } catch (_) {}
 }
 
@@ -462,32 +547,63 @@ document.getElementById('btn-launch-outreach').addEventListener('click', async (
   if (!message && seq !== 'visit-invite') { showFeedback(fb, 'Enter a message template.', 'error'); return; }
 
   try {
-    const res = await fetch(`${API_BASE}/launch-campaign`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, sequence_type: seq, message_body: message, lead_filter: filter })
+    const campaignId = 'camp_' + Math.random().toString(36).substring(2, 11);
+    
+    // Insert Campaign
+    db.prepare('INSERT INTO campaigns (id, name, sequence_type, message_body) VALUES (?, ?, ?, ?)').run(
+      campaignId, name, seq, message
+    );
+
+    // Get target prospects
+    let leadQuery = "SELECT * FROM prospects WHERE status = 'captured'";
+    if (filter === 'group') {
+      leadQuery += " AND source = 'group'";
+    } else if (filter === 'search') {
+      leadQuery += " AND source = 'search'";
+    }
+    const targetLeads = db.prepare(leadQuery).all();
+
+    let queuedCount = 0;
+    targetLeads.forEach(lead => {
+      let personalizedMsg = message;
+      if (personalizedMsg) {
+        personalizedMsg = personalizedMsg
+          .replace(/\{\{name\}\}/gi, lead.name)
+          .replace(/\{\{company\}\}/gi, lead.company || 'your company')
+          .replace(/\{\{headline\}\}/gi, lead.headline || '');
+      }
+
+      db.prepare(`
+        INSERT INTO queue (lead_id, campaign_id, profile_url, action_type, message_body, status)
+        VALUES (?, ?, ?, ?, ?, 'pending')
+      `).run(lead.id, campaignId, lead.profile_url, seq.startsWith('visit') ? 'visit_profile' : 'send_message', personalizedMsg || null);
+      
+      queuedCount++;
     });
-    const j = await res.json();
-    if (j.queued !== undefined) {
-      showFeedback(fb, `âœ“ Outreach launched! ${j.tasks} tasks queued across ${j.queued} leads.`, 'success');
-      loadOutreachStats();
-    } else showFeedback(fb, j.error || 'Failed.', 'error');
-  } catch (e) { showFeedback(fb, e.message, 'error'); }
+
+    showFeedback(fb, `✓ Outreach launched! Queued ${queuedCount} tasks.`, 'success');
+    loadOutreachStats();
+  } catch (e) { 
+    showFeedback(fb, e.message, 'error'); 
+  }
 });
 
-// â”€â”€â”€ CLEAR CRM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CLEAR CRM ───────────────────────────────────────────────────────────────
 document.getElementById('btn-clear-crm').addEventListener('click', async () => {
-  if (!confirm('Permanently clear all CRM data from the cloud database?')) return;
-  await fetch(`${API_BASE}/clear-data`, { method: 'POST' });
-  location.reload();
+  if (!confirm('Permanently clear all local CRM data?')) return;
+  try {
+    db.exec('DELETE FROM prospects; DELETE FROM campaigns; DELETE FROM queue; DELETE FROM logs;');
+    location.reload();
+  } catch (err) {
+    alert('Failed to clear database: ' + err.message);
+  }
 });
 
-// â”€â”€â”€ SHORTCUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.getElementById('btn-create-campaign-shortcut').addEventListener('click', () => {
   document.querySelector('[data-tab="campaigns-tab"]').click();
 });
 
-// â”€â”€â”€ UTILS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── UTILS ───────────────────────────────────────────────────────────────────
 function safe(str) {
   return (str || '').replace(/[&<>"']/g, t => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[t]));
 }
@@ -506,27 +622,10 @@ function showToast(msg) {
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
 }
 
-// â”€â”€â”€ API: direct queue POST for per-lead buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Add the missing /queue REST endpoint support via backend by sending via WS
-async function queueSingleTask(leadId, profileUrl, actionType, message = null) {
-  // Use a direct POST if the backend supports it, else log it
-  try {
-    await fetch(`${API_BASE}/queue`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: leadId, profile_url: profileUrl, action_type: actionType, message_body: message })
-    });
-  } catch (_) {}
-  loadStats();
-}
-
-// â”€â”€â”€ BOOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-loadCachedProfile();  // Show last known profile IMMEDIATELY (before any WS data)
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+loadCachedProfile();
 connectWS();
 loadStats();
 loadRemoteLogs();
 setInterval(loadStats, 15000);
 setInterval(loadRemoteLogs, 20000);
-
-
-

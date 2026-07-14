@@ -1,0 +1,9 @@
+{
+  "name": "com.linklead.automation",
+  "description": "Link Lead Native Messaging Host",
+  "path": "C:\\\\Users\\\\EARTH\\\\OneDrive\\\\Desktop\\\\Antigravity 2026\\\\Chrome Extension\\\\Linkedin Scrapper\\\\Windows App\\\\native-host\\\\host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://ldpgogniiiiahbeogfkhjpkkkebelpkj/"
+  ]
+}
